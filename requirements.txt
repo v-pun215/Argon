@@ -1,0 +1,9 @@
+customtkinter
+selenium
+minecraft-launcher-lib
+wget
+requests
+Pillow
+imagehash
+pywinstyles
+psutil
