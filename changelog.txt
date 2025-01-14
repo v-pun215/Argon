@@ -1,0 +1,10 @@
+v1.0-stable
+1. Fixed bug where deleting an instance does not delete the pinned instance (if it is pinned).
+2. Fixed bug where selecting a pinned instance (clicking it), does not actually select that instance.
+3. Added feature which allows searching versions when adding instance.
+4. Fixed bug where instance settings wouldn't save.
+5. On first launch, Latest Release is selected.
+6. Fixed bug where offline users can't launch Minecraft.
+7. Fixed scaling of the head and the skin in the launcher for offline accounts.
+8. Fixed a peculiar bug which does not allow transferring of mods on launch.
+9. Started working on the Argon Installer. For now, users can install using the install.py file.

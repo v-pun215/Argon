@@ -1,5 +1,5 @@
 import requests, json, wget,os
-import shutil
+import shutil, ctypes
 class Modrinth:
     def search_homePage():
         url = f"https://api.modrinth.com/v2/search"
@@ -60,18 +60,22 @@ class Modrinth:
         else:
             return f"Error: {response.status_code}"
         return False
-    
+
+
+
 class Manager:
-    def doesInstanceHaveMods(instance_name):
-        dir = f"instances/{instance_name}/mods"
-        has_jar_files = any(f.endswith('.jar') for f in os.listdir(dir))
+    def doesInstanceHaveMods(dir):
+        try:
+            has_jar_files = any(f.endswith('.jar') for f in os.listdir(dir))
+        except FileNotFoundError as e:
+            print(e)
+            has_jar_files = False
         if has_jar_files:
             return True
         else:
             return False
         
-    def transferModsOnRun(instance_name, mc_dir):
-        dir = f"instances/{instance_name}/mods"
+    def transferModsOnRun(dir, mc_dir):
         mc_dir = mc_dir + "/mods"
         for file_name in os.listdir(dir):
             if file_name.endswith('.jar'):
@@ -80,8 +84,7 @@ class Manager:
                 shutil.move(source_file, destination_file)
         print("Mods transferred successfully.")
 
-    def transferFilesBack(instance_name, mc_dir):
-        dir = f"instances/{instance_name}/mods"
+    def transferFilesBack(dir, mc_dir):
         mc_dir = mc_dir + "/mods"
         for file_name in os.listdir(mc_dir):
             if file_name.endswith('.jar'):
@@ -93,4 +96,4 @@ class Manager:
         
         
 if __name__ == "__main__":
-    print(Modrinth.downloadLatestVersion(slug="sodium", mc_ver="1.21", dir="instances/", mod_loader="fabric"))
+    pass

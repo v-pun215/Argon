@@ -362,7 +362,7 @@ class Argon(ct.CTk):
                     msg(title="Microsoft Account", message="Unable to refresh Microsoft Account. Please login again.", icon="warning")
                     #self.mc_login()
                 else:
-                    msg(title="Error", message=" Your Microsoft Account is unreachable due to no internet access. You will be able to play only using offline mode.", icon="error")
+                    msg(title="Error", message=" Your Microsoft Account is unreachable due to no internet access. You will be able to play only using offline mode.", icon="cancel")
                     auth_type = "Offline"
 
         elif auth_type == "ElyBy":
@@ -414,9 +414,10 @@ class Argon(ct.CTk):
         self.sidebar_frame = ct.CTkFrame(self, width=200, corner_radius=0)
         self.sidebar_frame.grid(row=0, column=0, rowspan=4, sticky="nsew")
         self.sidebar_frame.grid_rowconfigure(4, weight=1)
-        self.skin_head = ct.CTkImage(light_image=self.username_head_img, dark_image=self.username_head_img, size=(55, 50))
+        skin_size = (50, 50) if auth_type == "Offline" else (55, 50)
+        self.skin_head = ct.CTkImage(light_image=self.username_head_img, dark_image=self.username_head_img, size=skin_size)
         self.skin_head_label = ct.CTkLabel(self.sidebar_frame,text="",image=self.skin_head, bg_color="transparent")
-        self.skin_head_label.place(x=10, y=10)
+        self.skin_head_label.place(x=20 if auth_type=="Offline" else 10, y=10)
         self.login_label = ct.CTkLabel(self.sidebar_frame, text="Logged in as", font=ct.CTkFont(size=16, family="Inter"), anchor="w", text_color="#b3b3b3")
         self.login_label.place(x=80, y=8)
         self.username_label = ct.CTkLabel(self.sidebar_frame, text=username, font=ct.CTkFont(size=20, weight="bold", family="Inter"), anchor="w", text_color="white", bg_color="transparent", fg_color="transparent")
@@ -437,13 +438,15 @@ class Argon(ct.CTk):
             if getattr(self, f"pinned{i}") != "":
                 self.state_pinned[f"state_pinned{i}"] = "normal"
         ltvers = mc.utils.get_latest_version()
-        latestRelease = ltvers["release"]
-        latestSnapshot = ltvers["snapshot"]
+        latestRelease = f"vanilla release {ltvers['release']}"
+        print(latestRelease)
+        latestSnapshot = f"vanilla snapshot {ltvers['snapshot']}"
+        print(latestSnapshot)
         self.pinned_inst = {}
         
-        self.pinned_inst1 = ct.CTkButton(self.sidebar_frame,text="Latest Release",image=self.release_img, font=ct.CTkFont(size=15, family="Inter"), command=self.runCommand(self.choose_inst, latestRelease), height=30, width=200, corner_radius=0, anchor="w", fg_color="transparent", bg_color="#262626", hover_color="#1a1a1a", compound="left")
+        self.pinned_inst1 = ct.CTkButton(self.sidebar_frame,text="Latest Release",image=self.release_img, font=ct.CTkFont(size=15, family="Inter"), command=lambda: self.choose_inst("Latest Release", latestRelease), height=30, width=200, corner_radius=0, anchor="w", fg_color="transparent", bg_color="#262626", hover_color="#1a1a1a", compound="left")
         self.pinned_inst1.place(x=0, y=210)
-        self.pinned_inst2 = ct.CTkButton(self.sidebar_frame,text="Latest Snapshot",image=self.snapshot_img, font=ct.CTkFont(size=15, family="Inter"), command=self.runCommand(self.choose_inst, latestSnapshot), height=30, width=200, corner_radius=0, anchor="w", fg_color="transparent", bg_color="transparent", hover_color="#1a1a1a", compound="left")
+        self.pinned_inst2 = ct.CTkButton(self.sidebar_frame,text="Latest Snapshot",image=self.snapshot_img, font=ct.CTkFont(size=15, family="Inter"), command=lambda: self.choose_inst("Latest Snapshot", latestSnapshot), height=30, width=200, corner_radius=0, anchor="w", fg_color="transparent", bg_color="transparent", hover_color="#1a1a1a", compound="left")
         self.pinned_inst2.place(x=0, y=240)
         '''for i in range(3, 12):
             pinned_text = getattr(self, f"pinned{i-2}")
@@ -460,7 +463,8 @@ class Argon(ct.CTk):
             pinned_img = getattr(self, f"pinned{i}_img")
             fg_color = "#262626" if i % 2 != 0 else "transparent"
             hover_color = "#1a1a1a"
-            self.pinned_inst[f"pinned{i}"] = ct.CTkButton(self.sidebar_frame, text=pinned_text, image=pinned_img, font=ct.CTkFont(size=15, family="Inter"), command=self.sidebar_button_event, height=30, width=200, corner_radius=0, anchor="w", state=self.state_pinned[f"state_pinned{i}"], fg_color=fg_color, hover_color=hover_color)
+            print(pinned_text)
+            self.pinned_inst[f"pinned{i}"] = ct.CTkButton(self.sidebar_frame, text=pinned_text, image=pinned_img, font=ct.CTkFont(size=15, family="Inter"), command=lambda pinned_text=pinned_text: self.select_pinned_instance(pinned_text), height=30, width=200, corner_radius=0, anchor="w", state=self.state_pinned[f"state_pinned{i}"], fg_color=fg_color, hover_color=hover_color)
             self.pinned_inst[f"pinned{i}"].place(x=0, y=210 + (i + 1) * 30)
 
         '''
@@ -705,9 +709,33 @@ class Argon(ct.CTk):
                 ramlimiterExceptionBypassed = False
             ramlimiterExceptionBypassedSelected = ramlimiterExceptionBypassed
             allocated_ram = ram_var.get()
+            mc_dir_new = mc_dir_var.get()
+            if mc_dir_new != mc_dir:
+                try:
+                    os.chdir(mc_dir_new)
+                    if not os.path.exists("\\mods"):
+                        os.mkdir("mods")
+                    elif not os.path.exists("\\versions"):
+                        os.mkdir("versions")
+                    elif not os.path.exists("\\resourcepacks"):
+                        os.mkdir("resourcepacks")
+                    elif not os.path.exists("\\shaderpacks"):
+                        os.mkdir("shaderpacks")
+                    elif not os.path.exists("\\saves"):
+                        os.mkdir("saves")
+                    elif not os.path.exists("\\texturepacks"):
+                        os.mkdir("texturepacks")
+                    else:
+                        pass
+                    os.chdir(currn_dir)
+                    mc_dir_newee = mc_dir_new
+                except:
+                    msg.CTkMessagebox(title="Invalid Minecraft Directory", message="The minecraft directory you entered is invalid.", icon="cancel")
+                    return
             settings["settings"][0]["allocated_ram"] = allocated_ram
             settings["settings"][0]["ramlimiterExceptionBypassed"] = ramlimiterExceptionBypassed
             settings["settings"][0]["ramlimiterExceptionBypassedSelected"] = ramlimiterExceptionBypassedSelected
+            settings["Minecraft-home"] = mc_dir_newee
             with open("settings.json", "w") as js_write:
                 js_write.write(json.dumps(settings, indent=4))
             print("Settings saved.")
@@ -747,7 +775,7 @@ class Argon(ct.CTk):
         elif auth_type == "ElyBy":
             photo = ct.CTkImage(light_image=Image.open(f"img/user/ely-{username}-skin.png"), dark_image=Image.open(f"img/user/ely-{username}-skin.png"), size=(148, 307))
         elif auth_type == "Offline":
-            photo = ct.CTkImage(light_image=Image.open("img/user/steve-skin.png"), dark_image=Image.open("img/user/steve-skin.png"), size=(200, 339))
+            photo = ct.CTkImage(light_image=Image.open("img/user/steve-skin.png"), dark_image=Image.open("img/user/steve-skin.png"), size=(118, 257))
         self.skin_label = ct.CTkLabel(self.acc_frame, text="", image=photo, bg_color="transparent")
         if auth_type == "ElyBy":
             self.skin_label.place(x=180, y=110)
@@ -777,7 +805,6 @@ class Argon(ct.CTk):
         print(f"Argon loaded in {round(endtime - starttime, 2)} seconds.")
         pywinstyles.change_header_color(self, color="#242424")
         self.deiconify()
-        print("Argon loaded successfully.")
 
     '''  Future Update!
     def loading_screen(self):
@@ -789,6 +816,48 @@ class Argon(ct.CTk):
         self.splash_screen.configure(bg="#262626")
         self.splash_screen.destroy()
     '''
+    def refresh_pinned(self):
+        for i in range(1, 10):
+            pinned_text = getattr(self, f"pinned{i}")
+            pinned_img = getattr(self, f"pinned{i}_img")
+            fg_color = "#262626" if i % 2 != 0 else "transparent"
+            hover_color = "#1a1a1a"
+            print(pinned_text)
+            self.pinned_inst[f"pinned{i}"].destroy()
+
+        for i in range(1, 10):
+            pinned_text = getattr(self, f"pinned{i}")
+            pinned_img = getattr(self, f"pinned{i}_img")
+            fg_color = "#262626" if i % 2 != 0 else "transparent"
+            hover_color = "#1a1a1a"
+            print(pinned_text)
+            self.pinned_inst[f"pinned{i}"] = ct.CTkButton(self.sidebar_frame, text=pinned_text, image=pinned_img, font=ct.CTkFont(size=15, family="Inter"), command=lambda pinned_text=pinned_text: self.select_pinned_instance(pinned_text), height=30, width=200, corner_radius=0, anchor="w", state=self.state_pinned[f"state_pinned{i}"], fg_color=fg_color, hover_color=hover_color)
+            self.pinned_inst[f"pinned{i}"].place(x=0, y=210 + (i + 1) * 30)
+    def select_pinned_instance(self, instance_name):
+        print(instance_name)
+        inst = instance_name
+        with open("launcherProfiles.json", "r") as js_read:
+            s = js_read.read()
+            s = s.replace('\t','')
+            s = s.replace('\n','')
+            s = s.replace(',}','}')
+            s = s.replace(',]',']')
+            data = json.loads(s)
+
+        instances = data["all-instances"]
+        inst_ver = None
+        for instance_dict in instances:
+            
+            for instance_name, instance_data_list in instance_dict.items():
+                instance_data = instance_data_list[0]
+                print(instance_name)
+                if instance_name == inst:
+                    inst_ver = instance_data["method"] + " " + instance_data["type"] + " " + instance_data["version"]
+                    print(f"Selected instance: {inst} ({inst_ver})")
+
+        self.choose_inst(inst, inst_ver)
+        
+
     def change_settings_tab(self, event):
         if self.instance_settings_var.get() == "Settings":
             self.ins_settings_frame.place(relx=0.5, rely=0.53, anchor="center")
@@ -824,7 +893,7 @@ class Argon(ct.CTk):
             s = s.replace(',]',']')
             data = json.loads(s)
         icon_list = data["icons"]
-        self.chosen_icon = None
+        self.chosen_icon = inst_icon
         def chooseIcon(icon_name):
             self.chosen_icon = icon_name
             inst_icon = icon_name
@@ -876,9 +945,9 @@ class Argon(ct.CTk):
                     pass
         def save_settings():
             if self.chosen_icon == None:
-                msg.CTkMessagebox(title="Error", message="Please select an icon for the instance.", icon="error")
+                msg.CTkMessagebox(title="Error", message="Please select an icon for the instance.", icon="cancel")
             elif namevar.get() == "":
-                msg.CTkMessagebox(title="Error", message="Please enter a name for the instance.", icon="error")
+                msg.CTkMessagebox(title="Error", message="Please enter a name for the instance.", icon="cancel")
             else:
                 with open("launcherProfiles.json", "r") as js_read:
                     s = js_read.read()
@@ -891,15 +960,52 @@ class Argon(ct.CTk):
                     for instance_name, instance_data_list in instance.items():
                         instance_data = instance_data_list[0]
                         if instance_name == inst_name:
-                            instance_data["name"] = namevar.get()
+                            instance_name = self.name_entry.get()
+                            instance_data["name"] = self.name_entry.get()
                             instance_data["icon"] = self.chosen_icon
+                            instance[instance_name] = instance_data_list
+                            if os.path.exists(f"instances\\{inst_name}"):
+                                os.rename(f"instances\\{inst_name}", f"instances\\{instance_name}")
+                            if instance_data["pinned"]:
+                                pinned_instances = data["pinned-instances"][0]
+                                pinned_icons = data["pinned-icons"][0]
+                                for i in range(1, 10):
+                                    pinned_key = f"pinned{i}"
+                                    pinned_instances = data["pinned-instances"][0]
+                                    pinned_icons = data["pinned-icons"][0]
+                                    inst_name2 = pinned_instances[pinned_key]
+                                    if pinned_instances[pinned_key] == inst_name:
+                                        pinned_instances[pinned_key] = instance_name
+                                        pinned_icons[pinned_key] = self.chosen_icon
+                                        with open("launcherProfiles.json", "w") as js_write:
+                                            json.dump(data, js_write, indent=4)
+                                        def get_icon(icon_name):
+                                            if icon_name == None:
+                                                return icon_name
+                                            else:
+                                                return ct.CTkImage(light_image=Image.open(f"img/instance_icons/{icon_name}.png"), dark_image=Image.open(f"img/instance_icons/{icon_name}.png"), size=(23,23))
+
+                                        pinned_img = get_icon(data["pinned-icons"][0][f"pinned{i}"])
+                                        self.pinned_inst[f"pinned{i}"].configure(text=instance_name, state="normal", image=pinned_img)
+                                        break
+                                    else:
+                                        pass
+                            if instance_name != inst_name:
+                                del instance[inst_name]
+                            print("Hotdogs: ", instance_data["icon"])
                             break
+
+                
+                    
+                    
                 with open("launcherProfiles.json", "w") as js_write:
                     js_write.write(json.dumps(data, indent=4))
 
                 msg.CTkMessagebox(title="Success", message="Instance settings have been saved.", icon="check")
+                self.refresh_instances()
 
         def delete_instance():
+            instance_icon = inst_icon
             q = msg.CTkMessagebox(title="Delete Instance", message="Are you sure you want to delete this instance?", icon="warning", option_1="No", option_2="Yes")
             response = q.get()
             if response == "Yes":
@@ -913,10 +1019,60 @@ class Argon(ct.CTk):
                 for instance in data["all-instances"]:
                     for instance_name, instance_data_list in instance.items():
                         if instance_name == inst_name:
+                            print("Lets goo")
                             del instance[instance_name]
+                            print("deleted")
                             break
+
+                
                 with open("launcherProfiles.json", "w") as js_write:
                     js_write.write(json.dumps(data, indent=4))
+
+
+                # Delete if pinned
+                # Load the JSON data from the file
+                with open("launcherProfiles.json", "r") as js_read:
+                    s = js_read.read()
+                    s = s.replace('\t','')  # Trailing commas in dict cause file read problems, these lines will fix it.
+                    s = s.replace('\n','')
+                    s = s.replace(',}','}')
+                    s = s.replace(',]',']')
+                    data = json.loads(s)
+                
+                pinned_instances = data["pinned-instances"][0]
+                pinned_icons = data["pinned-icons"][0]
+                name = instance
+
+                # Unpin the instance
+                for i in range(1, 10):
+                    pinned_key = f"pinned{i}"
+                    pinned_instances = data["pinned-instances"][0]
+                    pinned_icons = data["pinned-icons"][0]
+                    inst_name2 = pinned_instances[pinned_key]
+                    print(instance_name)
+                    if pinned_instances[pinned_key] == instance_name:
+                        print("Instance found in pinned instances.")
+                        pinned_instances = data["pinned-instances"][0]
+                        pinned_icons = data["pinned-icons"][0]
+                        pinned_instances[pinned_key] = None
+                        pinned_icons[pinned_key] = None
+                        self.state_pinned[pinned_key] = "disabled"
+                        def get_icon_PIL(icon_name):
+                            if icon_name == None:
+                                photo = Image.open("img/instance_icons/none.png")
+                                photo = ct.CTkImage(photo)
+                                return photo
+                            else:
+                                photo = Image.open(f"img/instance_icons/{icon_name}.png")
+                                photo = ct.CTkImage(photo)
+                                return photo
+                        self.pinned_inst[pinned_key].configure(text="", state="disabled", image=get_icon_PIL(None))
+                        with open("launcherProfiles.json", "w") as js_write:
+                            json.dump(data, js_write, indent=4)
+                        print(f"Instance '{instance_name}' unpinned successfully.")
+                        break
+                    else:
+                        print("Error: Instance not found in pinned instances.")
                 self.instance_settings_window.destroy()
                 self.refresh_instances()
                 self.instance_settings_window.destroy()
@@ -1022,6 +1178,8 @@ class Argon(ct.CTk):
             self.delete_btn = ct.CTkButton(self.jar_frame, text="", image=self.delete_img, font=ct.CTkFont(size=15, family="Inter"), command=lambda file=file: self.delete_mod(file, inst_name), height=20, width=20, corner_radius=5, anchor="center", fg_color="white", bg_color="transparent", hover_color="#8a8a8a")
             self.delete_btn.place(x=685, y=10)
             row_index += 1
+
+    
     def delete_mod(self, file, inst_name):
         os.remove(f"instances/{inst_name}/mods/{file}")
         msg.CTkMessagebox(title="Mod Deleted", message="The mod has been deleted from the instance.", icon="check")
@@ -1136,7 +1294,6 @@ class Argon(ct.CTk):
 
         self.search_list = None
         self.is_loading = True
-
     def download_mod(self, slug, instance_name, mod_loader, mc_version):
         if not os.path.exists(f"instances/{instance_name}/mods"):
             os.chdir("instances")
@@ -1160,10 +1317,15 @@ class Argon(ct.CTk):
         elif auth_type == "Offline":
             msg.CTkMessagebox(title="Error", message="You cannot change the skin of an offline account.", icon="cancel")
     def sign_out(self):
-        #os.remove("launcherProfiles.json")
-        #os.remove("settings.json")
-        msg.CTkMessagebox(title="Sign Out", message="You have been signed out.", icon="check")
-        os.execv(sys.argv[0], sys.argv)
+        msg.CTkMessagebox(title="Sign Out", message="Are you sure you want to sign out?", icon="warning", option_1="No", option_2="Yes")
+        response = msg.CTkMessagebox.get()
+        if response == "Yes":
+
+            os.remove("launcherProfiles.json")
+            os.remove("settings.json")
+            msg.CTkMessagebox(title="Sign Out", message="You have been signed out.", icon="check")
+        else:
+            pass
     def refresh_instances(self):
         self.inst_list.destroy()
         with open("launcherProfiles.json", "r") as js_read:
@@ -1277,6 +1439,8 @@ class Argon(ct.CTk):
             return None
         else:
             return f"img/instance_icons/{icon_name}.png"
+        
+
     def pinInstance(self, name, icon, pinned_var, inst_name):
 
             if pinned_var.get() == "on":
@@ -1310,7 +1474,7 @@ class Argon(ct.CTk):
                                 photo = Image.open(f"img/instance_icons/{icon_name}.png")
                                 photo = ct.CTkImage(photo)
                                 return photo
-                        self.pinned_inst[pinned_key].configure(text=name, state="normal", image=get_icon_PIL(icon))
+                        self.pinned_inst[pinned_key].configure(text=name, state="normal", image=get_icon_PIL(icon), command=lambda pinned_key=name: self.select_pinned_instance(pinned_key))
                         data["all-instances"][0][inst_name][0]["pinned"] = True
                         with open("launcherProfiles.json", "w") as js_write:
                             json.dump(data, js_write, indent=4)
@@ -1367,6 +1531,8 @@ class Argon(ct.CTk):
                         break
                     else:
                         print("Error: Instance not found in pinned instances.")
+
+            self.refresh_instances()
     def showAddInstanceWindow(self):
         try:
             self.addInstance_window.deiconify()
@@ -1463,6 +1629,13 @@ class Argon(ct.CTk):
                 return "Fabric"
         
         def change_version(var):
+            print(var)
+            if not var in self.vanilla_versions:
+                if not var in self.forge_versions:
+                    if not var in self.fabric_versions:
+                        msg.CTkMessagebox(title="Error", message="Invalid version selected.", icon="cancel")
+                        return
+            version_var.set(var)
             self.chosen_version = str(get_version_method(var)+ " " + var)
             if var.startswith("release "):
                 self.chosen_version_alone = var.strip("release ")
@@ -1471,8 +1644,9 @@ class Argon(ct.CTk):
             else:
                 self.chosen_version_alone = var
             print(get_version_method(var),var)
-        self.version_dropdown = ct.CTkOptionMenu(self.addInstance_window, command=change_version, values=self.vanilla_versions, variable=version_var, font=ct.CTkFont(size=15, family="Inter"), width=200, button_color="#565b5e", bg_color="transparent", button_hover_color="#3c3e41", fg_color="#343638", hover="#3c3e41")
+        self.version_dropdown = ct.CTkComboBox(self.addInstance_window, command=change_version, values=self.vanilla_versions, variable=version_var, font=ct.CTkFont(size=15, family="Inter"), width=200, button_color="#565b5e", bg_color="transparent", button_hover_color="#3c3e41", fg_color="#343638", hover="#3c3e41")
         self.version_dropdown.place(x=270, y=130)
+        self.version_dropdown.bind("<Return>", lambda event: change_version(version_var.get()))
         CTkScrollableDropdown(self.version_dropdown, values=self.vanilla_versions, justify="left", frame_corner_radius=5, command=change_version)
         def method_change(var):
             print(var)
@@ -1484,22 +1658,25 @@ class Argon(ct.CTk):
                     self.chosen_version_alone = self.vanilla_versions[0].strip("release ")
                 elif self.vanilla_versions[0].startswith("snapshot "):
                     self.chosen_version_alone = self.vanilla_versions[0].strip("snapshot ")
-                self.version_dropdown = ct.CTkOptionMenu(self.addInstance_window, command=change_version, values=self.vanilla_versions, variable=version_var, font=ct.CTkFont(size=15, family="Inter"), width=200, button_color="#565b5e", bg_color="transparent", button_hover_color="#3c3e41", fg_color="#343638", hover="#3c3e41")
+                self.version_dropdown = ct.CTkComboBox(self.addInstance_window, command=change_version, values=self.vanilla_versions, variable=version_var, font=ct.CTkFont(size=15, family="Inter"), width=200, button_color="#565b5e", bg_color="transparent", button_hover_color="#3c3e41", fg_color="#343638", hover="#3c3e41")
                 self.version_dropdown.place(x=270, y=130)
+                self.version_dropdown.bind("<Return>", lambda event: change_version(version_var.get()))
                 CTkScrollableDropdown(self.version_dropdown, values=self.vanilla_versions, justify="left", frame_corner_radius=5, command=change_version)
             elif var == "Forge":
                 version_var.set(self.forge_versions[0])
                 self.chosen_version = str("Forge " + self.forge_versions[0])
                 self.chosen_version_alone = self.forge_versions[0]
-                self.version_dropdown = ct.CTkOptionMenu(self.addInstance_window, command=change_version, values=self.forge_versions, variable=version_var, font=ct.CTkFont(size=15, family="Inter"), width=200, button_color="#565b5e", bg_color="transparent", button_hover_color="#3c3e41", fg_color="#343638", hover="#3c3e41")
+                self.version_dropdown = ct.CTkComboBox(self.addInstance_window, command=change_version, values=self.forge_versions, variable=version_var, font=ct.CTkFont(size=15, family="Inter"), width=200, button_color="#565b5e", bg_color="transparent", button_hover_color="#3c3e41", fg_color="#343638", hover="#3c3e41")
                 self.version_dropdown.place(x=270, y=130)
+                self.version_dropdown.bind("<Return>", lambda event: change_version(version_var.get()))
                 CTkScrollableDropdown(self.version_dropdown, values=self.forge_versions, justify="left", frame_corner_radius=5, command=change_version)
             elif var == "Fabric":
                 version_var.set(self.fabric_versions[0])
                 self.chosen_version = str("Fabric " + self.fabric_versions[0])
                 self.chosen_version_alone = self.fabric_versions[0]
-                self.version_dropdown = ct.CTkOptionMenu(self.addInstance_window, command=change_version, values=self.fabric_versions, variable=version_var, font=ct.CTkFont(size=15, family="Inter"),width=200, button_color="#565b5e", bg_color="transparent", button_hover_color="#3c3e41", fg_color="#343638", hover="#3c3e41")
+                self.version_dropdown = ct.CTkComboBox(self.addInstance_window, command=change_version, values=self.fabric_versions, variable=version_var, font=ct.CTkFont(size=15, family="Inter"),width=200, button_color="#565b5e", bg_color="transparent", button_hover_color="#3c3e41", fg_color="#343638", hover="#3c3e41")
                 self.version_dropdown.place(x=270, y=130)
+                self.version_dropdown.bind("<Return>", lambda event: change_version(version_var.get()))
                 CTkScrollableDropdown(self.version_dropdown, values=self.fabric_versions, justify="left", frame_corner_radius=5, command=change_version)
         self.method_dropdown = ct.CTkOptionMenu(self.addInstance_window,variable=method_var, font=ct.CTkFont(size=15, family="Inter"), values=["Vanilla", "Forge", "Fabric"], width=100, button_color="#565b5e", bg_color="transparent", button_hover_color="#3c3e41", fg_color="#343638", hover="#3c3e41", command=method_change)
         self.method_dropdown.place(x=150, y=130)
@@ -1593,7 +1770,7 @@ class Argon(ct.CTk):
         
 
     def choose_inst(self, inst, inst_ver):
-        self.play.configure(text=f"Play\n{str(inst).capitalize()}")
+        self.play.configure(text=f"Play\n{str(inst)}")
         data["selected-version"] = inst_ver
         data["selected-instance"] = inst
         with open("settings.json", "w") as js_write:
@@ -1627,7 +1804,7 @@ class Argon(ct.CTk):
 
     def install_mc_window(self, version):
         self.install_window = ct.CTkToplevel(self)
-        self.install_window.title(f"Installing Minecraft Version {version}")
+        self.install_window.title(f"Downloading Minecraft {version}")
         self.install_window.geometry("500x200")
         self.install_window.resizable(False, False)
         self.install_window.configure(bg="#262626")
@@ -1785,7 +1962,7 @@ class Argon(ct.CTk):
         with open("settings.json", "w") as js_set:
             json.dump(data, js_set, indent=4)
             js_set.close()
-
+        os.chdir(mc_dir)
         if connected == True:
             if self.runtime_ver.startswith("vanilla"):
                 if self.login_method == "Microsoft":
@@ -1916,6 +2093,16 @@ class Argon(ct.CTk):
                         pass
                 
                 elif self.login_method == "Offline":
+                    if data["selected-version"] == "vanilla snapshot":
+                            self.mc_ver = str(data["selected-version"]).partition(" ")[2]
+                    else:
+                        self.mc_ver = str(data["selected-version"]).strip("vanilla ")
+                    self.detected_ver = ""
+                    if self.mc_ver.startswith("release"):
+                        self.detected_ver = self.mc_ver.strip("release ")
+                    elif self.mc_ver.startswith("snapshot"):
+                        self.detected_ver = self.mc_ver.partition(' ')[2]
+                    self.j2 = [r"-javaagent:{}\\authlib\\".format(currn_dir) + "" + f"authlib-injector-1.2.5.jar=ely.by", f"-Xmx{int(self.ram_mb)}M", "-Xms128M"]
                     self.options = {
                         "username": data["User-info"][0]["username"],
                         "uuid": data["User-info"][0]["UUID"],
@@ -1983,6 +2170,7 @@ class Argon(ct.CTk):
                             "executablePath": javaPath,
                         }
                         selected_instance = data["selected-instance"]
+                        selected_instance = currn_dir + "\\instances\\" + selected_instance + "\\mods"
                         instanceHasMods = False
                         if mods.Manager.doesInstanceHaveMods(selected_instance):
                             instanceHasMods = True
@@ -2046,6 +2234,7 @@ class Argon(ct.CTk):
                         "executablePath": javaPath,
                     }
                     selected_instance = data["selected-instance"]
+                    selected_instance = currn_dir + "\\instances\\" + selected_instance + "\\mods"
                     instanceHasMods = False
                     if mods.Manager.doesInstanceHaveMods(selected_instance):
                         instanceHasMods = True
@@ -2094,6 +2283,16 @@ class Argon(ct.CTk):
                         pass
 
                 elif self.login_method == "Offline":
+                    if data["selected-version"] == "vanilla snapshot":
+                            self.mc_ver = str(data["selected-version"]).partition(" ")[2]
+                    else:
+                        self.mc_ver = str(data["selected-version"]).strip("vanilla ")
+                    self.detected_ver = ""
+                    if self.mc_ver.startswith("release"):
+                        self.detected_ver = self.mc_ver.strip("release ")
+                    elif self.mc_ver.startswith("snapshot"):
+                        self.detected_ver = self.mc_ver.partition(' ')[2]
+                    self.j2 = [r"-javaagent:{}\\authlib\\".format(currn_dir) + "" + f"authlib-injector-1.2.5.jar=ely.by", f"-Xmx{int(self.ram_mb)}M", "-Xms128M"]
                     self.options = {
                         "username": data["User-info"][0]["username"],
                         "uuid": data["User-info"][0]["UUID"],
@@ -2105,6 +2304,7 @@ class Argon(ct.CTk):
                     parts = self.mc_ver.split('-')
                     self.detected_ver1 = f"{parts[0]}-forge-{parts[1]}"
                     selected_instance = data["selected-instance"]
+                    selected_instance = currn_dir + "\\instances\\" + selected_instance + "\\mods"
                     instanceHasMods = False
                     if mods.Manager.doesInstanceHaveMods(selected_instance):
                         instanceHasMods = True
@@ -2181,8 +2381,9 @@ class Argon(ct.CTk):
                             "jvmArguments": self.j1,
                             "executablePath": javaPath,
                         }
-                        selected_instance = data["selected-instance"]
-                        instanceHasMods = False
+                        selected_instance = str(data["selected-instance"])
+                        selected_instance = currn_dir + "\\instances\\" + selected_instance + "\\mods" #A bug that really irritated me so i had to specify this stuff
+                        print(selected_instance)
                         if mods.Manager.doesInstanceHaveMods(selected_instance):
                             instanceHasMods = True
                             mods.Manager.transferModsOnRun(selected_instance, self.mc_dir)
@@ -2252,6 +2453,7 @@ class Argon(ct.CTk):
                         "executablePath": javaPath,
                     }
                     selected_instance = data["selected-instance"]
+                    selected_instance = currn_dir + "\\instances\\" + selected_instance + "\\mods"
                     instanceHasMods = False
                     if mods.Manager.doesInstanceHaveMods(selected_instance):
                         instanceHasMods = True
@@ -2300,6 +2502,16 @@ class Argon(ct.CTk):
                         pass
                 
                 elif self.login_method == "Offline":
+                    if data["selected-version"] == "vanilla snapshot":
+                            self.mc_ver = str(data["selected-version"]).partition(" ")[2]
+                    else:
+                        self.mc_ver = str(data["selected-version"]).strip("vanilla ")
+                    self.detected_ver = ""
+                    if self.mc_ver.startswith("release"):
+                        self.detected_ver = self.mc_ver.strip("release ")
+                    elif self.mc_ver.startswith("snapshot"):
+                        self.detected_ver = self.mc_ver.partition(' ')[2]
+                    self.j2 = [r"-javaagent:{}\\authlib\\".format(currn_dir) + "" + f"authlib-injector-1.2.5.jar=ely.by", f"-Xmx{int(self.ram_mb)}M", "-Xms128M"]
                     self.options = {
                         "username": data["User-info"][0]["username"],
                         "uuid": data["User-info"][0]["UUID"],
@@ -2317,6 +2529,7 @@ class Argon(ct.CTk):
                     self.v1 = self.detected_ver[:6]
                     self.detected_ver2 = f"fabric-loader-{self.lv}-{self.v1}"
                     selected_instance = data["selected-instance"]
+                    selected_instance = currn_dir + "\\instances\\" + selected_instance + "\\mods"
                     instanceHasMods = False
                     if mods.Manager.doesInstanceHaveMods(selected_instance):
                         instanceHasMods = True
@@ -2363,6 +2576,7 @@ class Argon(ct.CTk):
                         self.showErrorWindow(crash_report, minecraft_log)
                     else:
                         pass
+        os.chdir(currn_dir)
             
         
     def showErrorWindow(self, crash_report, minecraft_log):
@@ -2504,6 +2718,5 @@ class SplashScreen(ct.CTk):
         #argon_thread.start()
 
 if __name__ == "__main__":
-    check_internet()
     app = Argon()
     app.mainloop()

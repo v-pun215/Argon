@@ -37,6 +37,8 @@ def get_size(bytes, suffix="B"):
             return f"{bytes:.2f}{unit}{suffix}"
         bytes /= factor
 
+latestRelease = str("vanilla release " + latest_release)
+
 settings = {
                 "accessToken": None,
                 "clientToken": None,
@@ -60,8 +62,8 @@ settings = {
                     }
                 ],
                 "Minecraft-home" : mc_dir,
-                "selected-version": None,
-                "selected-instance": None,
+                "selected-version": latestRelease,
+                "selected-instance": "Latest Release",
                 "settings" : [
                     {
                         "allocated_ram" : 3000,
@@ -296,7 +298,8 @@ class WelcomeToArgon(ct.CTk):
         data["User-info"][0]["username"] = self.usr
         data["User-info"][0]["AUTH_TYPE"] = "Offline"
         data["User-info"][0]["cracked_password"] = self.generate_cracked_password()
-        self.generate_cracked_uuid()
+        self.uuid = uuid.uuid4().hex
+        data["User-info"][0]["UUID"] = self.uuid
         print(f"User: {self.usr} Logged In.")
         with open("settings.json", "w") as f:
             json.dump(data, f, indent=4 )
