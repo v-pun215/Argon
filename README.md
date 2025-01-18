@@ -7,25 +7,30 @@ A feature-rich, mod-supporting, Minecraft Launcher built in Python.
  - Python 3.10+
  - Java 21
 
+Using the installer, it will automatically download and install these dependencies, if not found on PATH.
+
 
 # Installation
- - Download the latest release from the Github Releases.
- - Run ``install.py`` or ``pip install -r requirements.txt``
- - To start Argon, run ``main.py`` or ``python main.py``
+## Using installer
+ - Download the latest release's installer from [here](https://github.com/v-pun215/Argon/releases)
+ - Run the installer (it may raise a virus false-positive)
+ - It will install Argon and its dependencies, and also creates Start Menu and Desktop icons.
 
-## Note
-Some of the settings do not work as of now (v1.0-stable).
+## Manually
+ - Run install.py or pip install -r requirements.txt
+ - To start Argon, run main.py or python main.py
 
-This is planned to be fixed in the next update (v1.1).
-
-
+# Planned Features
+ - Multi-OS support (Linux, macOS)
+ - More bug free and stable experience
+ - A non-verbose mode (ie. the terminal is not shown)
 
 # Features
- - Supports Vanilla, Forge and Fabric
- - Supports modding through Modrinth (interface built-in)
- - Seperate instances of different versions with their own respective mods.
- - Log in methods: Microsoft, ElyBy, and Offline (cracked)
-
+ - Supports Vanilla, Forge and Fabric ✅
+ - Runs on Windows 10+ 🪟
+ - Supports modding through Modrinth (interface built-in) 🟩
+ - Seperate instances of different versions with their own respective mods (kind of like MultiMC, but not quite) 🎉
+ - Log in methods: Microsoft, ElyBy, and Offline (cracked) ☘️
 
 # Screenshots
  - Welcome screen
