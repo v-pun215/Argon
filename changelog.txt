@@ -8,3 +8,9 @@ v1.0-stable
 7. Fixed scaling of the head and the skin in the launcher for offline accounts.
 8. Fixed a peculiar bug which does not allow transferring of mods on launch.
 9. Started working on the Argon Installer. For now, users can install using the install.py file.
+
+v1.0.1
+1. Added a WIP label in Argon settings, this will be worked upon in coming updates.
+2. Finished an EXE installer for Argon. 
+3. Made "Bypass RAM Limiter" setting take 90% of free RAM. (This is really not recommended, use only for testing purposes.)
+4. Started working on tracking time of playing an instance.

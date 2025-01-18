@@ -36,12 +36,15 @@ from checkSkinChange import checkChangeSkin
 from threading import Thread
 from CTkScrollableDropdown import *
 import mods
+import pyglet, os
+
+pyglet.font.add_file('fonts/Inter.ttc') 
 
 starttime = time.time()
 
 '''Argon Metadata'''
 author = "v_pun215"
-version = "1.0-stable"
+version = "1.0-unstable"
 description = "A feature-rich minecraft launcher built in Python."
 #--#
 
@@ -56,7 +59,7 @@ usr_accnt = str(Path.home()).replace("\\", "/").split("/")[-1]
 mc_dir = r"C:\\users\\{}\\AppData\\Roaming\\.minecraft".format(usr_accnt)
 svmem = psutil.virtual_memory()
 if not os.path.exists(r"{}/settings.json".format(currn_dir)):
-    subprocess.Popen(["python", "welcome.pyw"])
+    subprocess.Popen(["python", "welcome.py"])
     sys.exit()
 else:
     pass
@@ -209,6 +212,8 @@ class Argon(ct.CTk):
         self.grid_columnconfigure((2, 3), weight=0)
         self.grid_rowconfigure((0, 1, 2), weight=1)
 
+
+
         
 
         # Variables
@@ -277,6 +282,7 @@ class Argon(ct.CTk):
         self.pinned9_img = get_icon(data["pinned-icons"][0]["pinned9"])
         self.username_head_img = None
 
+        '''Heres when all the loading time is being taken away. And I'm gonna fix that! (with a loading screen)'''
         def get_latest_forge_versions():
             import xml.etree.ElementTree as ET
             """
@@ -407,8 +413,10 @@ class Argon(ct.CTk):
             self.username_head_img = Image.open(f"img/user/ely-{username}.png")
         elif auth_type == "Offline":
             self.username_head_img = Image.open("img/user/steve.png")
-        
 
+        '''End of loading stuff'''
+
+            
 
         # Sidebar
         self.sidebar_frame = ct.CTkFrame(self, width=200, corner_radius=0)
@@ -704,7 +712,11 @@ class Argon(ct.CTk):
         self.by_switch.place(x=280, y=220)
         def save_settings():
             if switch_var.get() == "on":
-                ramlimiterExceptionBypassed = True
+                response = msg.CTkMessagebox(title="Warning", message="Bypassing the RAM limiter can cause performance issues and crashes. Are you sure you want to bypass the RAM limit?", icon="warning", buttons=["Yes", "No"])
+                if response.get() == "No":
+                    ramlimiterExceptionBypassed = False
+                else:
+                    ramlimiterExceptionBypassed = True
             else:
                 ramlimiterExceptionBypassed = False
             ramlimiterExceptionBypassedSelected = ramlimiterExceptionBypassed
@@ -745,17 +757,19 @@ class Argon(ct.CTk):
         
         self.argon_settings_frame = ct.CTkFrame(self.settings_frame, height=400, width=780, bg_color="transparent", fg_color="transparent")
         self.argon_settings_frame.place(relx=0.5, rely=0.52, anchor="center")
-        self.verbose_label = ct.CTkLabel(self.argon_settings_frame, text="Verbose Mode", font=ct.CTkFont(size=25, family="Inter"), fg_color="transparent", text_color="white")
-        self.verbose_label.place(x=20, y=10)
-        if verbose == True:
-            verbose_var = ct.StringVar(value="on")
-        else:
-            verbose_var = ct.StringVar(value="off")
-        self.verbose_switch = ct.CTkSwitch(self.argon_settings_frame, width=50, height=30, corner_radius=15, bg_color="transparent", fg_color="white", text="", variable=verbose_var, onvalue="on", offvalue="off")
-        self.verbose_switch.place(x=220, y=10)
+        self.WIP_label = ct.CTkLabel(self.argon_settings_frame, text="Work in Progress", font=ct.CTkFont(size=30, family="Inter"), fg_color="transparent", text_color="#b3b3b3")
+        self.WIP_label.place(relx=0.35, rely=0.2)
+        #self.verbose_label = ct.CTkLabel(self.argon_settings_frame, text="Verbose Mode", font=ct.CTkFont(size=25, family="Inter"), fg_color="transparent", text_color="white")
+        #self.verbose_label.place(x=20, y=10)
+        #if verbose == True:
+        #    verbose_var = ct.StringVar(value="on")
+        #else:
+        #    verbose_var = ct.StringVar(value="off")
+        #self.verbose_switch = ct.CTkSwitch(self.argon_settings_frame, width=50, height=30, corner_radius=15, bg_color="transparent", fg_color="white", text="", variable=verbose_var, onvalue="on", offvalue="off")
+        #self.verbose_switch.place(x=220, y=10)
 
-        self.save_button = ct.CTkButton(self.argon_settings_frame, text="Save", font=ct.CTkFont(size=20, family="Inter"), command=save_settings, height=30, width=100, corner_radius=5, anchor="center")
-        self.save_button.place(relx = 0.5, rely=0.95, anchor="center")
+        #self.save_button = ct.CTkButton(self.argon_settings_frame, text="Save", font=ct.CTkFont(size=20, family="Inter"), command=save_settings, height=30, width=100, corner_radius=5, anchor="center")
+        #self.save_button.place(relx = 0.5, rely=0.95, anchor="center")
 
 
 
@@ -804,7 +818,6 @@ class Argon(ct.CTk):
         endtime = time.time()
         print(f"Argon loaded in {round(endtime - starttime, 2)} seconds.")
         pywinstyles.change_header_color(self, color="#242424")
-        self.deiconify()
 
     '''  Future Update!
     def loading_screen(self):
@@ -1532,7 +1545,6 @@ class Argon(ct.CTk):
                     else:
                         print("Error: Instance not found in pinned instances.")
 
-            self.refresh_instances()
     def showAddInstanceWindow(self):
         try:
             self.addInstance_window.deiconify()
@@ -1954,7 +1966,10 @@ class Argon(ct.CTk):
         self.int_ram_gb = int(self.ram_gb)
 
         self.cpu_count = os.cpu_count()
-
+        if ramlimiterExceptionBypassedSelected == True:
+            print("RAM Limiter is turned off. This is not recommended. Use only for testing purposes.")
+            print(r"Allocating 99% of free RAM to Minecraft.")
+            self.ram_mb = int(psutil.virtual_memory().free / 1024 / 1024) - 1000
         self.j1 = [f"-Xmx{int(self.ram_mb)}M", "-Xms128M"]
 
         data["settings"][0]["jvm-args"] = self.j1
@@ -2004,7 +2019,7 @@ class Argon(ct.CTk):
                             stderr=subprocess.STDOUT,  # Combine stderr with stdout
                             text=True  # Decode output as text
                         )
-                        
+                        start_time = time.time()
                         try:
                             last_line = None
                             log = ""
@@ -2018,7 +2033,9 @@ class Argon(ct.CTk):
 
                         except:
                             pass
-                        
+                        elapsed_time = time.time() - start_time
+                        elapsed_time = round(elapsed_time)
+                        print("Minecraft ran for", str(datetime.timedelta(seconds=elapsed_time)))
                         '''Get crash report if it exists '''
                         if last_line.startswith("#@!@# Game crashed!"):
                             print("Game crashed! Getting crash report...")

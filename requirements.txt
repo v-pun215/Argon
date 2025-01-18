@@ -7,3 +7,6 @@ Pillow
 imagehash
 pywinstyles
 psutil
+pywin32
+pywiglet
+winshell
