@@ -44,7 +44,7 @@ starttime = time.time()
 
 '''Argon Metadata'''
 author = "v_pun215"
-version = "1.0-unstable"
+version = "1.0.1"
 description = "A feature-rich minecraft launcher built in Python."
 #--#
 
