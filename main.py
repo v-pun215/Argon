@@ -38,7 +38,6 @@ from CTkScrollableDropdown import *
 import mods
 import pyglet, os
 
-pyglet.font.add_file('fonts/Inter.ttc') 
 
 starttime = time.time()
 
