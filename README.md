@@ -3,6 +3,9 @@ A feature-rich, mod-supporting, Minecraft Launcher built in Python.
 
 ![image](https://github.com/user-attachments/assets/4be74d1f-bead-4854-ac82-f3877888b953)
 
+# PSA
+If you like this project, PLEASE ⭐ it. It'll help me out!
+
 # Requirements
  - Python 3.10+
  - Java 21
