@@ -59,3 +59,7 @@ Using the installer, it will automatically download and install these dependenci
  - Account
 ![image](https://github.com/user-attachments/assets/2d45671b-4e5f-4641-bb06-8ed483b655d7)
 
+# Disclaimer
+Argon is in no way affiliated with Mojang Studios, nor should it be considered a project endorsed by Mojang Studios.
+
+You may not reuse the Argon API keys and client IDs under any circumstances.
