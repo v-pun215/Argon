@@ -1,4 +1,7 @@
-﻿# Argon
+<h1 align="center"><img width=300 height=98 src="https://github.com/user-attachments/assets/1bb6dc87-3d02-45d2-b847-8779ecf51b58"</img>
+</h1>
+
+
 A feature-rich, mod-supporting, Minecraft Launcher built in Python.
 
 ![image](https://github.com/user-attachments/assets/4be74d1f-bead-4854-ac82-f3877888b953)
