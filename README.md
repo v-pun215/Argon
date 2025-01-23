@@ -39,6 +39,13 @@ Using the installer, it will automatically download and install these dependenci
  - Seperate instances of different versions with their own respective mods (kind of like MultiMC, but not quite) 🎉
  - Log in methods: Microsoft, ElyBy, and Offline (cracked) ☘️
 
+# Credits
+ - [customtkinter](https://github.com/tomschimansky/customtkinter)
+ - [minecraft-launcher-lib](https://codeberg.org/JakobDev/minecraft-launcher-lib)
+ - [pypresence](https://github.com/qwertyquerty/pypresence)
+ - [CTkMessagebox](https://github.com/Akascape/CTkMessagebox)
+ - [CTkScrollableDropdown](https://github.com/Akascape/CTkScrollableDropdown) (included in source code)
+
 #  Screenshots
  - Welcome screen
 ![image](https://github.com/user-attachments/assets/286dd267-018e-4690-a5b6-15dd0017780f)
