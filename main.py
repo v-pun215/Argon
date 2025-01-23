@@ -36,14 +36,15 @@ from checkSkinChange import checkChangeSkin
 from threading import Thread
 from CTkScrollableDropdown import *
 import mods
-import pyglet, os
-
+import os
+import playTime
+from pypresence import Presence
 
 starttime = time.time()
 
 '''Argon Metadata'''
-author = "v_pun215"
-version = "1.0.1"
+author = "v-pun215"
+version = "1.1"
 description = "A feature-rich minecraft launcher built in Python."
 #--#
 
@@ -52,6 +53,26 @@ mcNewsHeaders = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleW
 cl = keys.client
 se = keys.secret
 re = "https://eclient-done.vercel.app/"
+discordClient = keys.discordClient
+
+''' Connect to Discord RPC '''
+try:
+    RPC = Presence(discordClient)
+    RPC.connect()
+except:
+    print("Discord not found running, not connecting to RPC.")
+    class Presence:
+        def __init__(self):
+            pass
+        def connect(self, **kwargs):
+            pass
+        def update(self, **kwargs):
+            pass
+    RPC = Presence()
+
+
+
+RPC.update(state="In the launcher", large_image="large", small_image="small", large_text="launcher")
 
 currn_dir = os.getcwd()
 usr_accnt = str(Path.home()).replace("\\", "/").split("/")[-1]
@@ -82,7 +103,9 @@ $$ |  $$ |$$ |      \$$$$$$$ |\$$$$$$  |$$ |  $$ |
                      \______/                     
       ''')
 print("")
-print("---Console Starts Here---")
+print("Welcome to Argon, a feature-rich Minecraft launcher built in Python.")
+print("Version: ", version)
+print("--------------------------------------------")
 
 with open("settings.json", "r") as js_read:
     s = js_read.read()
@@ -509,9 +532,48 @@ class Argon(ct.CTk):
         #self.ch_label.place(x=275, y=30)
         self.logo_img = ct.CTkImage(light_image=Image.open("img/argon.png"), dark_image=Image.open("img/argon.png"), size=(300, 100))
         self.logo_label = ct.CTkLabel(self.ch_frame, text="",image=self.logo_img, bg_color="transparent")
-        self.logo_label.place(relx=0.5, rely=0.1, anchor="center")
+        self.logo_label.place(relx=0.5, rely=0.2, anchor="center")
+        # Statistics Frame
+        self.stat_frame = ct.CTkFrame(self.ch_frame, corner_radius=10, height=300,width=600, bg_color="transparent")
+        self.stat_frame.place(relx=0.5, rely=0.6, anchor="center")
+        curnTime = datetime.datetime.now()
+        if curnTime.hour < 12:
+            greeting = "Good morning"
+        elif 12<= curnTime.hour < 18:
+            greeting = "Good afternoon"
+        else:
+            greeting = "Good evening"
+        self.greeting = ct.CTkLabel(self.stat_frame, text=greeting+", "+ username + ".", font=ct.CTkFont(size=30, weight="bold", family="Inter"), text_color="white", bg_color="transparent", anchor="center")
+        self.greeting.place(relx=0.03, rely=0.1, anchor="w")
+
+        #self.news_buttn = ct.CTkButton(self.stat_frame, text="Minecraft News", font=ct.CTkFont(size=15, family="Inter"), height=30, width=120, corner_radius=5, anchor="w", fg_color="#212121", bg_color="transparent", hover_color="#1a1a1a")
+        #self.news_buttn.place(relx=0.75, rely=0.1, anchor="w")
+
+        self.time_frame = ct.CTkFrame(self.stat_frame, corner_radius=10, height=220, width=570, bg_color="transparent")
+        self.time_frame.place(relx=0.5, rely=0.5675, anchor="center")
+
+        self.title_of_tf = ct.CTkLabel(self.time_frame, text="Total Time Played", font=ct.CTkFont(size=20, weight="bold", family="Inter"), text_color="white", bg_color="transparent")
+        self.title_of_tf.place(relx=0.025, rely=0.1, anchor="w")
+        self.time_img = ct.CTkImage(light_image=Image.open("img/clock.png"), dark_image=Image.open("img/clock.png"), size=(30, 30))
+        self.time_img_label = ct.CTkLabel(self.time_frame, text="", image=self.time_img, bg_color="transparent", corner_radius=5)
+        self.time_img_label.place(relx=0.025, rely=0.25, anchor="w")
+        self.time_label = ct.CTkLabel(self.time_frame, text=playTime.fancyTimeToWords(playTime.getTotalTimePlayed()), font=ct.CTkFont(size=27, family="Inter"), text_color="white", bg_color="transparent")
+        self.time_label.place(relx=0.1, rely=0.25, anchor="w")
+
+        self.title_of_tf = ct.CTkLabel(self.time_frame, text="Favorite Instance", font=ct.CTkFont(size=20, weight="bold", family="Inter"), text_color="white", bg_color="transparent")     
+        self.title_of_tf.place(relx=0.025, rely=0.55, anchor="w")   
+
+        self.fav_img = ct.CTkImage(light_image=Image.open("img/instance_icons/"+playTime.getFavInstIcon()+".png"), dark_image=Image.open("img/instance_icons/"+playTime.getFavInstIcon()+".png"), size=(30, 30))
+        self.fav_img_label = ct.CTkLabel(self.time_frame, text="", image=self.fav_img, bg_color="transparent", corner_radius=5)
+        self.fav_img_label.place(relx=0.025, rely=0.7, anchor="w")
+
+        self.fav_inst_label = ct.CTkLabel(self.time_frame, text=playTime.getFavInstance(), font=ct.CTkFont(size=27, family="Inter"), text_color="white", bg_color="transparent")
+        self.fav_inst_label.place(relx=0.1, rely=0.7, anchor="w")
+
+
+        ''' This is the news frame. I have removed it because the RSS provided by Minecraft has been taken down. This is in protest ig (also to reduce loading time)
         self.news_frame = ct.CTkFrame(self.ch_frame, corner_radius=10, height=450,width=850, bg_color="transparent")
-        self.news_frame.place(relx=0.501, rely=0.6, anchor="center")
+        self.news_frame.place(relx=0.501, rely=0.595, anchor="center")
         try:
             get_json_file()
             with open("mcNewsletter.json", "r") as js_read:
@@ -520,7 +582,7 @@ class Argon(ct.CTk):
             counter = 0
             def open_url(url):
                 webbrowser.open(url)
-            print("Loading MC Changelog... (this may take some time)")
+            print("Loading Minecraft Changelog... (this may take some time)")
             def short(text, max_length):
                 if len(text) > max_length:
                     return text[:max_length - 3] + "..."
@@ -558,6 +620,7 @@ class Argon(ct.CTk):
                     counter = counter+1
         except Exception as e:
             os.execv(sys.argv[0], sys.argv)
+        '''
         
 
         # Instances
@@ -628,6 +691,9 @@ class Argon(ct.CTk):
                 #globals()[var_name] = pinned_var
                 pinned_checkbox = ct.CTkCheckBox(frame,text="", corner_radius=5, fg_color="white", bg_color="#262626", command=lambda name=instance_data["name"], icon=instance_data["icon"], pinD_var=pinned_var, inst_name=instance_name: self.pinInstance(name, icon, pinD_var, inst_name), variable=pinned_var, onvalue="on",offvalue="off", checkbox_height=20, checkbox_width=20)
                 pinned_checkbox.place(x=75, y=85)
+
+                time_label = ct.CTkLabel(frame, text="Played for " +playTime.timeToWords(instance_data["timePlayed"]), font=ct.CTkFont(size=15, family="Inter"), bg_color="transparent", text_color="#b3b3b3")
+                time_label.place(x=580, y=85)
 
                 # Store the frame in the dictionary
                 instance_frames[instance_name] = frame
@@ -810,9 +876,9 @@ class Argon(ct.CTk):
         self.signout_btn = ct.CTkButton(self.acc_frame, text="Sign Out", font=ct.CTkFont(size=15, family="Inter"), command=sign_out_confirm, height=30, width=120, corner_radius=5, anchor="center", fg_color="#cc0000", hover_color="#990000")
         self.signout_btn.place(x=350, y=290)
         self.argon_version = ct.CTkLabel(self.acc_frame, text=f"Argon v{version}", font=ct.CTkFont(size=15, family="Inter"), fg_color="transparent", text_color="#7a7a7a")
-        self.argon_version.place(x=10, y=570)
+        self.argon_version.place(relx=0.01, rely=0.975, anchor="w")
         self.builtby = ct.CTkLabel(self.acc_frame, text="Made by v-pun215.", font=ct.CTkFont(size=15, family="Inter"), fg_color="transparent", text_color="#7a7a7a")
-        self.builtby.place(x=680, y=570)
+        self.builtby.place(relx=0.99, rely=0.975, anchor="e")
         self.select_frame("home")
         endtime = time.time()
         print(f"Argon loaded in {round(endtime - starttime, 2)} seconds.")
@@ -1031,7 +1097,6 @@ class Argon(ct.CTk):
                 for instance in data["all-instances"]:
                     for instance_name, instance_data_list in instance.items():
                         if instance_name == inst_name:
-                            print("Lets goo")
                             del instance[instance_name]
                             print("deleted")
                             break
@@ -1143,6 +1208,8 @@ class Argon(ct.CTk):
             else:
                 jar_files = [f for f in os.listdir(dir) if f.endswith('.jar')]
                 row_index = 0
+                if jar_files == []:
+                    print("No mods downloaded in this instance.")
                 for file in jar_files:
                     self.jar_frame = ct.CTkFrame(self.directory_frame, corner_radius=7, height=50, width=730, fg_color="#373737")
                     self.jar_frame.grid(row=row_index, column=0, sticky="nsew", pady=7, padx=7)
@@ -1553,11 +1620,11 @@ class Argon(ct.CTk):
     def addInstance(self):
         self.addInstance_window = ct.CTkToplevel(self)
         self.addInstance_window.title("Create new instance")
-        self.addInstance_window.geometry("700x400")
+        self.addInstance_window.geometry("750x400")
         self.addInstance_window.resizable(False, False)
         self.addInstance_window.configure(bg="#262626")
         self.addInstance_window.after(200, lambda: self.addInstance_window.iconbitmap("img/icon.ico"))
-        self.addInstance_window.protocol("WM_DELETE_WINDOW", lambda: self.addInstance_window.withdraw())
+        self.addInstance_window.protocol("WM_DELETE_WINDOW", lambda: closeWindow())
         self.addInstance_window.withdraw()
         with open("launcherProfiles.json", "r") as js_read:
             s = js_read.read()
@@ -1572,7 +1639,7 @@ class Argon(ct.CTk):
             self.chosen_icon = icon_name
             counter = 0
             for icon in icon_list:
-                for i in range(1,18):
+                for i in range(1,29):
                     if icon[f"icon{i}"] is not None:
                         counter += 1
                         if icon_name == icon[f"icon{i}"]:
@@ -1584,7 +1651,10 @@ class Argon(ct.CTk):
                         self.icon_list.append(icon[f"icon{i}"])
                         self.icon_name = icon[f"icon{i}"]
                         self.icon_select_btn = ct.CTkButton(self.addInstance_window, text="", image=get_icon_PIL(icon[f"icon{i}"]), font=ct.CTkFont(size=30, family="Inter"), command=lambda icon_name=self.icon_name: chooseIcon(icon_name), height=50, width=50, corner_radius=5, anchor="center", fg_color=fg, bg_color="transparent", hover_color=hover, compound="left", )
-                        self.icon_select_btn.place(x=220 + (i * 50), y=10)
+                        if i<=14:
+                            self.icon_select_btn.place(x=-25 + (i * 50), y=10)
+                        elif i>14:
+                            self.icon_select_btn.place(x=-25 + ((i-14) * 50), y=60)
                     else:
                         pass
         def get_icon_PIL(icon_name):
@@ -1600,18 +1670,21 @@ class Argon(ct.CTk):
         self.icon_list = []
         counter = 0
         for icon in icon_list:
-            for i in range(1,18):
+            for i in range(1,29):
                 if icon[f"icon{i}"] is not None:
                     counter += 1
                     self.icon_list.append(icon[f"icon{i}"])
                     self.icon_name = icon[f"icon{i}"]
                     self.icon_select_btn = ct.CTkButton(self.addInstance_window, text="", image=get_icon_PIL(icon[f"icon{i}"]), font=ct.CTkFont(size=30, family="Inter"), command=lambda icon_name=self.icon_name: chooseIcon(icon_name), height=50, width=50, corner_radius=5, anchor="center", fg_color="transparent", bg_color="transparent", hover_color="#1a1a1a", compound="left", )
-                    self.icon_select_btn.place(x=220 + (i * 50), y=10)
+                    if i<=14:
+                        self.icon_select_btn.place(x=-25 + (i * 50), y=10)
+                    elif i>14:
+                        self.icon_select_btn.place(x=-25 + ((i-14) * 50), y=60)
                 else:
                     pass
         name_va1r = ct.StringVar()
-        self.name_entry1 = ct.CTkEntry(self.addInstance_window, font=ct.CTkFont(size=25, family="Inter"), width=400, textvariable=name_va1r,  placeholder_text="Name", placeholder_text_color="#b3b3b3")
-        self.name_entry1.place(x=150, y=70)
+        self.name_entry1 = ct.CTkEntry(self.addInstance_window, placeholder_text="Name...", font=ct.CTkFont(size=25, family="Inter"), width=400, textvariable=name_va1r, placeholder_text_color="#b3b3b3")
+        self.name_entry1.place(relx=0.235, rely=0.3)
         method_var = ct.StringVar()
         method_var.set("Vanilla")
         self.vanilla_versions = []
@@ -1656,7 +1729,7 @@ class Argon(ct.CTk):
                 self.chosen_version_alone = var
             print(get_version_method(var),var)
         self.version_dropdown = ct.CTkComboBox(self.addInstance_window, command=change_version, values=self.vanilla_versions, variable=version_var, font=ct.CTkFont(size=15, family="Inter"), width=200, button_color="#565b5e", bg_color="transparent", button_hover_color="#3c3e41", fg_color="#343638", hover="#3c3e41")
-        self.version_dropdown.place(x=270, y=130)
+        self.version_dropdown.place(x=295, rely=0.4)
         self.version_dropdown.bind("<Return>", lambda event: change_version(version_var.get()))
         CTkScrollableDropdown(self.version_dropdown, values=self.vanilla_versions, justify="left", frame_corner_radius=5, command=change_version)
         def method_change(var):
@@ -1690,7 +1763,7 @@ class Argon(ct.CTk):
                 self.version_dropdown.bind("<Return>", lambda event: change_version(version_var.get()))
                 CTkScrollableDropdown(self.version_dropdown, values=self.fabric_versions, justify="left", frame_corner_radius=5, command=change_version)
         self.method_dropdown = ct.CTkOptionMenu(self.addInstance_window,variable=method_var, font=ct.CTkFont(size=15, family="Inter"), values=["Vanilla", "Forge", "Fabric"], width=100, button_color="#565b5e", bg_color="transparent", button_hover_color="#3c3e41", fg_color="#343638", hover="#3c3e41", command=method_change)
-        self.method_dropdown.place(x=150, y=130)
+        self.method_dropdown.place(x=175, rely=0.4)
         def checkInstalled():
             isinstalled = False
             print(self.chosen_version_alone)
@@ -1709,11 +1782,16 @@ class Argon(ct.CTk):
                 print("Not installed")
                 self.handle_download(self.chosen_version)
         self.install_btn = ct.CTkButton(self.addInstance_window, text="Install", font=ct.CTkFont(size=15, family="Inter"), command=checkInstalled, corner_radius=5, anchor="center", width=60)
-        self.install_btn.place(x=490, y=130)
+        self.install_btn.place(x=515, rely=0.4)
         namevar = self.name_entry1.get()
+
+        def closeWindow():
+            self.name_entry.delete(0, "end")
+            self.addInstance_window.withdraw()
+
         
-        self.addinstance_btn = ct.CTkButton(self.addInstance_window, text="Add Instance", font=ct.CTkFont(size=20, family="Inter"), command=lambda: self.addinstance_fr(name=self.name_entry1.get(), version=self.chosen_version, icon=self.chosen_icon), corner_radius=5, anchor="center", width=120)
-        self.addinstance_btn.place(x=270, y=180)
+        self.addinstance_btn = ct.CTkButton(self.addInstance_window, text="Add Instance", font=ct.CTkFont(size=15, family="Inter"), command=lambda: self.addinstance_fr(name=self.name_entry1.get(), version=self.chosen_version, icon=self.chosen_icon), corner_radius=5, anchor="center", width=120)
+        self.addinstance_btn.place(x=300, rely=0.55)
 
         
         #CTkScrollableDropdown(self.method_dropdown, values=["Vanilla", "Forge", "Fabric"], justify="left", frame_corner_radius=5, command=method_change)
@@ -1740,14 +1818,21 @@ class Argon(ct.CTk):
                 version = new_string
             
         elif version.startswith("Forge"):
+            os.mkdir("instances/"+name)
+            os.chdir("instances/"+name)
+            os.mkdir("mods")
+            os.chdir(currn_dir)
             version = version.partition(" ")[2]
             method = "forge"
             typee = "release"
         elif version.startswith("Fabric"):
+            os.mkdir("instances/"+name)
+            os.chdir("instances/"+name)
+            os.mkdir("mods")
+            os.chdir(currn_dir)
             version = version.partition(" ")[2]
             method = "fabric"
             typee = "release"
-
         with open("launcherProfiles.json", "r") as js_read:
             s = js_read.read()
             s = s.replace('\t','')
@@ -1764,7 +1849,7 @@ class Argon(ct.CTk):
                     "method": method,
                     "type": typee,
                     "icon": icon,
-                    "timePlayed": 0,
+                    "timePlayed": "00:00:00",
                     "mods": None,
                     "pinned": False
                 }
@@ -1775,6 +1860,7 @@ class Argon(ct.CTk):
         with open("launcherProfiles.json", "w") as js_write:
             json.dump(data, js_write, indent=4)
         self.addInstance_window.withdraw()
+        
         msg.CTkMessagebox(title="Instance added", message=f"Instance '{name}' has been added successfully.", icon="info")
         self.refresh_instances()
 
@@ -1917,7 +2003,7 @@ class Argon(ct.CTk):
             if selected_ver == version["id"]:
                 break
         else:
-            msg.CTkMessagebox(title="Error", message="The selected version is not installed.", icon="cancel")
+            self.install_mc(selected_ver)
         '''Creates the thread on which minecraft is running'''
         self.t4 = Thread(target=self.launch_mc)
         self.t4.start()
@@ -1930,9 +2016,11 @@ class Argon(ct.CTk):
             self.after(100, lambda: self.monitor_mc(self.t4))
         else:
             t4.join(timeout=3.0)
+            RPC.update(state=f"In the launcher", large_image="large", small_image="small", large_text="launcher")
             self.deiconify()
 
     def launch_mc(self):
+        
         '''Runs minecraft with the specified settings'''
         with open("settings.json", "r") as js_read:
             s = js_read.read()
@@ -1945,6 +2033,7 @@ class Argon(ct.CTk):
         self.login_method = data["User-info"][0]["AUTH_TYPE"]
         self.detected_ver = ""
         self.runtime_ver = data["selected-version"]
+        RPC.update(state=f"Playing Minecraft {self.runtime_ver}", large_image="large", small_image="small", large_text="Minecraft")
 
         with open("settings.json", "r") as js_read1:
             self.s1 = js_read1.read()
@@ -1977,6 +2066,26 @@ class Argon(ct.CTk):
             json.dump(data, js_set, indent=4)
             js_set.close()
         os.chdir(mc_dir)
+        """ Next update
+        method1, type1, version1 = self.runtime_ver.split(" ")
+        print(version1)
+        for version in mc.utils.get_installed_versions(mc_dir):
+            if method1 == "vanilla":
+                if not version1 == version["id"]:
+                    print("Not installed")
+                    not_installed = True
+                else:
+                    
+            elif method1 == "fabric":
+                self.lv = get_latest_loader_version()
+                version1 =f"fabric-loader-{self.lv}-{version1}"
+                if not version1 == version["id"]:
+                    print("Not installed")
+                    self.handle_download(self.runtime_ver)
+                    return
+            elif method1 == "forge":
+                pass
+        """
         if connected == True:
             if self.runtime_ver.startswith("vanilla"):
                 if self.login_method == "Microsoft":
@@ -2010,15 +2119,14 @@ class Argon(ct.CTk):
                         
                         self.withdraw()
                         self.minecraft_command = mc.command.get_minecraft_command(self.detected_ver, self.mc_dir, self.options)
-                        print(self.detected_ver)
                         print(f"Launching Minecraft {self.mc_ver}")
+                        start_time = time.time()
                         command = subprocess.Popen(
                             self.minecraft_command,
                             stdout=subprocess.PIPE,
                             stderr=subprocess.STDOUT,  # Combine stderr with stdout
                             text=True  # Decode output as text
                         )
-                        start_time = time.time()
                         try:
                             last_line = None
                             log = ""
@@ -2033,8 +2141,9 @@ class Argon(ct.CTk):
                         except:
                             pass
                         elapsed_time = time.time() - start_time
-                        elapsed_time = round(elapsed_time)
-                        print("Minecraft ran for", str(datetime.timedelta(seconds=elapsed_time)))
+                        elapsed_time = int(str(elapsed_time).split(".")[0])
+                        print("Minecraft ran for", time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))
+                        playTime.addTime(selected_instance, time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))
                         '''Get crash report if it exists '''
                         if last_line.startswith("#@!@# Game crashed!"):
                             print("Game crashed! Getting crash report...")
@@ -2073,8 +2182,8 @@ class Argon(ct.CTk):
                     }
                     self.withdraw()
                     self.minecraft_command = mc.command.get_minecraft_command(self.detected_ver, self.mc_dir, self.options)
-                    print(self.detected_ver)
                     print(f"Launching Minecraft {self.mc_ver}")
+                    start_time = time.time()
                     command = subprocess.Popen(
                         self.minecraft_command,
                         stdout=subprocess.PIPE,
@@ -2093,6 +2202,10 @@ class Argon(ct.CTk):
                         command.wait()
                     except:
                         pass
+                    elapsed_time = time.time() - start_time
+                    elapsed_time = int(str(elapsed_time).split(".")[0])
+                    print("Minecraft ran for", time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))
+                    playTime.addTime(selected_instance, time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))
                     '''Get crash report if it exists '''
                     if last_line.startswith("#@!@# Game crashed!"):
                         print("Game crashed! Getting crash report...")
@@ -2130,6 +2243,7 @@ class Argon(ct.CTk):
                     self.minecraft_command = mc.command.get_minecraft_command(self.detected_ver, self.mc_dir, self.options)
                     print(self.detected_ver)
                     print(f"Launching Minecraft {self.mc_ver}")
+                    start_time = time.time()
                     command = subprocess.Popen(
                         self.minecraft_command,
                         stdout=subprocess.PIPE,
@@ -2148,6 +2262,10 @@ class Argon(ct.CTk):
                         command.wait()
                     except:
                         pass
+                    elapsed_time = time.time() - start_time
+                    elapsed_time = int(str(elapsed_time).split(".")[0])
+                    print("Minecraft ran for", time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))
+                    playTime.addTime(selected_instance, time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))
                     '''Get crash report if it exists '''
                     if last_line.startswith("#@!@# Game crashed!"):
                         print("Game crashed! Getting crash report...")
@@ -2197,6 +2315,7 @@ class Argon(ct.CTk):
                         self.minecraft_command = mc.command.get_minecraft_command(self.detected_ver1, self.mc_dir, self.options)
                         print(self.detected_ver)
                         print(f"Launching Minecraft {self.mc_ver}")
+                        start_time = time.time()
                         command = subprocess.Popen(
                             self.minecraft_command,
                             stdout=subprocess.PIPE,
@@ -2215,6 +2334,10 @@ class Argon(ct.CTk):
                             command.wait()
                         except:
                             pass
+                        elapsed_time = time.time() - start_time
+                        elapsed_time = int(str(elapsed_time).split(".")[0])
+                        print("Minecraft ran for", time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))
+                        playTime.addTime(selected_instance, time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))
                         if instanceHasMods:
                             mods.Manager.transferFilesBack(selected_instance, self.mc_dir)
                         else:
@@ -2261,6 +2384,7 @@ class Argon(ct.CTk):
                     self.minecraft_command = mc.command.get_minecraft_command(self.detected_ver1, self.mc_dir, self.options)
                     print(self.detected_ver)
                     print(f"Launching Minecraft {self.mc_ver}")
+                    start_time = time.time()
                     command = subprocess.Popen(
                         self.minecraft_command,
                         stdout=subprocess.PIPE,
@@ -2279,6 +2403,10 @@ class Argon(ct.CTk):
                         command.wait()
                     except:
                         pass
+                    elapsed_time = time.time() - start_time
+                    elapsed_time = int(str(elapsed_time).split(".")[0])
+                    print("Minecraft ran for", time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))
+                    playTime.addTime(selected_instance, time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))
                     if instanceHasMods:
                         mods.Manager.transferFilesBack(selected_instance, self.mc_dir)
                     else:
@@ -2321,9 +2449,9 @@ class Argon(ct.CTk):
                     self.detected_ver1 = f"{parts[0]}-forge-{parts[1]}"
                     selected_instance = data["selected-instance"]
                     selected_instance = currn_dir + "\\instances\\" + selected_instance + "\\mods"
-                    instanceHasMods = False
                     if mods.Manager.doesInstanceHaveMods(selected_instance):
                         instanceHasMods = True
+                        print("Transferring mods from instance to Minecraft")
                         mods.Manager.transferModsOnRun(selected_instance, self.mc_dir)
                     else:
                         pass
@@ -2331,6 +2459,7 @@ class Argon(ct.CTk):
                     self.minecraft_command = mc.command.get_minecraft_command(self.detected_ver1, self.mc_dir, self.options)
                     print(self.detected_ver)
                     print(f"Launching Minecraft {self.mc_ver}")
+                    start_time = time.time()
                     command = subprocess.Popen(
                         self.minecraft_command,
                         stdout=subprocess.PIPE,
@@ -2349,6 +2478,10 @@ class Argon(ct.CTk):
                         command.wait()
                     except:
                         pass
+                    elapsed_time = time.time() - start_time
+                    elapsed_time = int(str(elapsed_time).split(".")[0])
+                    print("Minecraft ran for", time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))
+                    playTime.addTime(selected_instance, time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))
                     if instanceHasMods:
                         mods.Manager.transferFilesBack(selected_instance, self.mc_dir)
                     else:
@@ -2371,7 +2504,11 @@ class Argon(ct.CTk):
             elif self.runtime_ver.startswith("fabric"):
                 self.lv = get_latest_loader_version()
                 if self.login_method == "Microsoft":
+                    with open("settings.json") as readee:
+                        data = json.loads(readee.read())
+                    print(data["selected-instance"])
                     try:
+                        
                         self.mc_ver = str(data["selected-version"]).partition(" ")[2]
                         self.detected_ver = ""
                         if self.mc_ver.startswith("release"):
@@ -2382,13 +2519,6 @@ class Argon(ct.CTk):
                         self.v1 = self.detected_ver[:6]
                         self.detected_ver2 = f"fabric-loader-{self.lv}-{self.v1}"
                         
-                        with open("settings.json", "r") as js_read:
-                            s = js_read.read()
-                            s = s.replace('\t','')
-                            s = s.replace('\n','')
-                            s = s.replace(',}','}')
-                            s = s.replace(',]',']')
-                            data = json.loads(s)
                         refresh_token = data["Microsoft-settings"][0]["refresh_token"]
                         self.options = {
                             "username": msaoptions["username"],
@@ -2399,7 +2529,7 @@ class Argon(ct.CTk):
                         }
                         selected_instance = str(data["selected-instance"])
                         selected_instance = currn_dir + "\\instances\\" + selected_instance + "\\mods" #A bug that really irritated me so i had to specify this stuff
-                        print(selected_instance)
+                        instanceHasMods = False
                         if mods.Manager.doesInstanceHaveMods(selected_instance):
                             instanceHasMods = True
                             mods.Manager.transferModsOnRun(selected_instance, self.mc_dir)
@@ -2409,6 +2539,7 @@ class Argon(ct.CTk):
                         self.minecraft_command = mc.command.get_minecraft_command(self.detected_ver2, self.mc_dir, self.options)
                         print(self.detected_ver)
                         print(f"Launching Minecraft {self.mc_ver}")
+                        start_time = time.time()
                         command = subprocess.Popen(
                             self.minecraft_command,
                             stdout=subprocess.PIPE,
@@ -2427,6 +2558,10 @@ class Argon(ct.CTk):
                             command.wait()
                         except:
                             pass
+                        elapsed_time = time.time() - start_time
+                        elapsed_time = int(str(elapsed_time).split(".")[0])
+                        print("Minecraft ran for", time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))
+                        playTime.addTime(data["selected-instance"], time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))
                         if instanceHasMods:
                             mods.Manager.transferFilesBack(selected_instance, self.mc_dir)
                         else:
@@ -2480,6 +2615,7 @@ class Argon(ct.CTk):
                     self.minecraft_command = mc.command.get_minecraft_command(self.detected_ver2, self.mc_dir, self.options)
                     print(self.detected_ver)
                     print(f"Launching Minecraft {self.mc_ver}")
+                    start_time = time.time()
                     command = subprocess.Popen(
                         self.minecraft_command,
                         stdout=subprocess.PIPE,
@@ -2498,6 +2634,10 @@ class Argon(ct.CTk):
                         command.wait()
                     except:
                         pass
+                    elapsed_time = time.time() - start_time
+                    elapsed_time = int(str(elapsed_time).split(".")[0])
+                    print("Minecraft ran for", time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))
+                    playTime.addTime(selected_instance, time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))
                     if instanceHasMods:
                         mods.Manager.transferFilesBack(selected_instance, self.mc_dir)
                     else:
@@ -2556,6 +2696,7 @@ class Argon(ct.CTk):
                     self.minecraft_command = mc.command.get_minecraft_command(self.detected_ver2, self.mc_dir, self.options)
                     print(self.detected_ver)
                     print(f"Launching Minecraft {self.mc_ver}")
+                    start_time = time.time()
                     command = subprocess.Popen(
                         self.minecraft_command,
                         stdout=subprocess.PIPE,
@@ -2574,6 +2715,10 @@ class Argon(ct.CTk):
                         command.wait()
                     except:
                         pass
+                    elapsed_time = time.time() - start_time
+                    elapsed_time = int(str(elapsed_time).split(".")[0])
+                    print("Minecraft ran for", time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))
+                    playTime.addTime(selected_instance, time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))
                     if instanceHasMods:
                         mods.Manager.transferFilesBack(selected_instance, self.mc_dir)
                     else:

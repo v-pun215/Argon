@@ -31,7 +31,7 @@ def resource_path(relative_path):
     return os.path.join(base_path, relative_path)    
 
 
-version = "v1.0.1"
+version = "v1.1"
 
 
 

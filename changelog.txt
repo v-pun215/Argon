@@ -1,3 +1,6 @@
+v1.0-unstable
+Initial release
+
 v1.0-stable
 1. Fixed bug where deleting an instance does not delete the pinned instance (if it is pinned).
 2. Fixed bug where selecting a pinned instance (clicking it), does not actually select that instance.
@@ -14,3 +17,11 @@ v1.0.1
 2. Finished an EXE installer for Argon. 
 3. Made "Bypass RAM Limiter" setting take 90% of free RAM. (This is really not recommended, use only for testing purposes.)
 4. Started working on tracking time of playing an instance.
+
+v1.1 
+1. Added playtime tracking.
+2. Added a label for displaying playtime (per instance).
+3. Added Discord Activity support. (still WIP)
+4. Reduced loading times (by 10s+) by removing the Minecraft news on homepage, and replacing it with some stats.
+5. Added many more instance icon options.
+6. Added new icon (clock.png) for the homepage stats
