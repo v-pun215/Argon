@@ -4,7 +4,8 @@
 
 A feature-rich, mod-supporting, Minecraft Launcher built in Python.
 
-![image](https://github.com/user-attachments/assets/4be74d1f-bead-4854-ac82-f3877888b953)
+![image](https://github.com/user-attachments/assets/56f69b69-4be2-425a-9a3e-1a04110a4ab0)
+
 
 # PSA
 If you like this project, PLEASE ⭐ it. It'll help me out!
@@ -43,10 +44,10 @@ Using the installer, it will automatically download and install these dependenci
 ![image](https://github.com/user-attachments/assets/286dd267-018e-4690-a5b6-15dd0017780f)
 
  - Home
-![image](https://github.com/user-attachments/assets/4be74d1f-bead-4854-ac82-f3877888b953)
+![image](https://github.com/user-attachments/assets/e451c0d9-c213-4ad9-8341-17feb89d069b)
 
  - Instances
-![image](https://github.com/user-attachments/assets/5d1684db-94db-4924-b691-1aac68be8aa4)
+![image](https://github.com/user-attachments/assets/6a517667-f87a-478f-8ff0-34617fe707e8)
 
 
  - Instance Settings
@@ -60,10 +61,10 @@ Using the installer, it will automatically download and install these dependenci
 
 
  - Settings
-![image](https://github.com/user-attachments/assets/3a6e81f3-1c7c-4e32-80df-961488af9cdc)
+![image](https://github.com/user-attachments/assets/a9f25c1e-5c19-4d63-b030-fb71d35fb8d9)
 
  - Account
-![image](https://github.com/user-attachments/assets/2d45671b-4e5f-4641-bb06-8ed483b655d7)
+![image](https://github.com/user-attachments/assets/237690ee-56c5-4524-8cca-50b56287643a)
 
 # ⛔ Disclaimer
 Argon is in no way affiliated with Mojang Studios, nor should it be considered a project endorsed by Mojang Studios.
