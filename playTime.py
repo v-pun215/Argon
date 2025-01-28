@@ -19,6 +19,9 @@ def getTime(instance_name):
         return timePlayed
     
 def addTime(instance_name, time_amt):
+    if instance_name == "Latest Release" or instance_name == "Latest Snapshot":
+        print("Cannot add time to the latest release or snapshot instance.")
+        return
     os.chdir(currn_dir)
     with open("launcherProfiles.json", "r") as js_read:
         s = js_read.read()
@@ -66,7 +69,10 @@ def fancyTimeToWords(time_str):
     """Formats a time string (HH:MM:SS) into words."""
 
     hour, minute, second = map(int, time_str.split(':'))
-    return f"{hour} hours and {minute} minutes"
+    if hour == 0:
+        return f"{minute} minutes"
+    else:
+        return f"{hour} hours and {minute} minutes"
 
 def getTotalTimePlayed():
     with open("launcherProfiles.json") as f:
@@ -110,9 +116,33 @@ def getFavInstance():
         data = json.load(f)
 
     all_insts = data['all-instances']
+    if all_insts == [{}]:
+        return "No instance"
     all_time = "00:00:00"
     fav_instance = ""
     fav_time = "00:00:00"
+    playTimes = []
+    for inst_dict in all_insts:
+        for instance_name, instance_data_list in inst_dict.items():
+            instance_data = instance_data_list[0]
+            time_amt = instance_data["timePlayed"]
+            timePlayed = all_time
+            hd,md,sd=str(time_amt).split(':')
+
+            newhrs = int(hd)
+            newmins = int(md)
+            newsecs = int(sd)
+
+            addedTime=datetime.timedelta(hours=newhrs, minutes=newmins, seconds=newsecs)
+
+
+            playTimes.append(str(addedTime))
+
+
+    time_objects = [datetime.datetime.strptime(t, '%H:%M:%S') for t in playTimes]
+    max_time = max(time_objects)
+    max_time_str = max_time.strftime('%H:%M:%S')
+
     for inst_dict in all_insts:
         for instance_name, instance_data_list in inst_dict.items():
             instance_data = instance_data_list[0]
@@ -136,14 +166,13 @@ def getFavInstance():
             addedTime=datetime.timedelta(hours=newhrs, minutes=newmins, seconds=newsecs)
 
             updatedTime = originalTime + addedTime
+            updatedTime = updatedTime.time()
+            updatedTime = str(updatedTime)
 
-            timeToPut = updatedTime.time()
-
-            timeToPut = str(timeToPut)
-            all_time = timeToPut
-            if timeToPut > fav_time:
+            if updatedTime == max_time_str:
                 fav_instance = instance_name
-                fav_time = timeToPut
+                fav_time = updatedTime
+            
 
     if fav_instance == "":
         return "No instance"
@@ -152,11 +181,34 @@ def getFavInstance():
 def getFavInstIcon():
     with open("launcherProfiles.json") as f:
         data = json.load(f)
-
     all_insts = data['all-instances']
+    if all_insts == [{}]:
+        return "release"
     all_time = "00:00:00"
     fav_instance = ""
     fav_time = "00:00:00"
+    playTimes = []
+    for inst_dict in all_insts:
+        for instance_name, instance_data_list in inst_dict.items():
+            instance_data = instance_data_list[0]
+            time_amt = instance_data["timePlayed"]
+            timePlayed = all_time
+            hd,md,sd=str(time_amt).split(':')
+
+            newhrs = int(hd)
+            newmins = int(md)
+            newsecs = int(sd)
+
+            addedTime=datetime.timedelta(hours=newhrs, minutes=newmins, seconds=newsecs)
+
+
+            playTimes.append(str(addedTime))
+
+
+    time_objects = [datetime.datetime.strptime(t, '%H:%M:%S') for t in playTimes]
+    max_time = max(time_objects)
+    max_time_str = max_time.strftime('%H:%M:%S')
+
     for inst_dict in all_insts:
         for instance_name, instance_data_list in inst_dict.items():
             instance_data = instance_data_list[0]
@@ -180,15 +232,13 @@ def getFavInstIcon():
             addedTime=datetime.timedelta(hours=newhrs, minutes=newmins, seconds=newsecs)
 
             updatedTime = originalTime + addedTime
+            updatedTime = updatedTime.time()
+            updatedTime = str(updatedTime)
 
-            timeToPut = updatedTime.time()
-
-            timeToPut = str(timeToPut)
-            all_time = timeToPut
-            if timeToPut > fav_time:
+            if updatedTime == max_time_str:
                 fav_instance = instance_name
-                fav_time = timeToPut
-
+                fav_time = updatedTime
+            
     with open("launcherProfiles.json") as f:
         data = json.load(f)
 
@@ -199,4 +249,4 @@ def getFavInstIcon():
                 return instance_data_list[0]["icon"]
             
     return "release"
-            
+getFavInstIcon()

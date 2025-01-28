@@ -31,7 +31,7 @@ def resource_path(relative_path):
     return os.path.join(base_path, relative_path)    
 
 
-version = "v1.1"
+version = "v1.2"
 
 
 
@@ -88,7 +88,7 @@ class ArgonInstaller(ct.CTk):
 
         # below 
         self.v_label = ct.CTkLabel(self.page1, text=f"{version}", font=("Inter", 15), text_color="#b3b3b3")
-        self.v_label.place(x=28, rely=0.955, anchor="center")
+        self.v_label.place(x=10, rely=0.955, anchor="w")
 
         self.author_label = ct.CTkLabel(self.page1, text="Made by v-pun215.", font=("Inter", 15), text_color="#b3b3b3")
         self.author_label.place(relx=0.89, rely=0.955, anchor="center")
@@ -116,7 +116,7 @@ class ArgonInstaller(ct.CTk):
 
         # below 
         self.v_label = ct.CTkLabel(self.page2, text=f"{version}", font=("Inter", 15), text_color="#b3b3b3")
-        self.v_label.place(x=28, rely=0.955, anchor="center")
+        self.v_label.place(x=10, rely=0.955, anchor="w")
 
         self.author_label = ct.CTkLabel(self.page2, text="Made by v-pun215.", font=("Inter", 15), text_color="#b3b3b3")
         self.author_label.place(relx=0.89, rely=0.955, anchor="center")
@@ -146,7 +146,7 @@ class ArgonInstaller(ct.CTk):
 
         #below 
         self.v_label = ct.CTkLabel(self.page3, text=f"{version}", font=("Inter", 15), text_color="#b3b3b3")
-        self.v_label.place(x=28, rely=0.955, anchor="center")
+        self.v_label.place(x=10, rely=0.955, anchor="w")
 
         self.author_label = ct.CTkLabel(self.page3, text="Made by v-pun215.", font=("Inter", 15), text_color="#b3b3b3")
         self.author_label.place(relx=0.89, rely=0.955, anchor="center")
@@ -168,7 +168,7 @@ class ArgonInstaller(ct.CTk):
 
         #below 
         self.v_label = ct.CTkLabel(self.page4, text=f"{version}", font=("Inter", 15), text_color="#b3b3b3")
-        self.v_label.place(x=28, rely=0.955, anchor="center")
+        self.v_label.place(x=10, rely=0.955, anchor="w")
 
         self.author_label = ct.CTkLabel(self.page4, text="Made by v-pun215.", font=("Inter", 15), text_color="#b3b3b3")
         self.author_label.place(relx=0.89, rely=0.955, anchor="center")
@@ -187,7 +187,7 @@ class ArgonInstaller(ct.CTk):
 
         #below 
         self.v_label = ct.CTkLabel(self.page5, text=f"{version}", font=("Inter", 15), text_color="#b3b3b3")
-        self.v_label.place(x=28, rely=0.955, anchor="center")
+        self.v_label.place(x=10, rely=0.955, anchor="w")
 
         self.author_label = ct.CTkLabel(self.page5, text="Made by v-pun215.", font=("Inter", 15), text_color="#b3b3b3")
         self.author_label.place(relx=0.89, rely=0.955, anchor="center")

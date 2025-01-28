@@ -1,5 +1,5 @@
 import requests, json, wget,os
-import shutil, ctypes
+import shutil, ctypes, mrpackManager, minecraft_launcher_lib
 class Modrinth:
     def search_homePage():
         url = f"https://api.modrinth.com/v2/search"
@@ -62,7 +62,33 @@ class Modrinth:
         return False
 
 
+    def downloadModpack(slug, mc_ver, dir, mod_loader):
+        Modrinth.downloadLatestVersion(slug, mc_ver, dir, mod_loader)
 
+        try:
+            mrpack_path = filepath
+            mrpack_information = mrpackManager.get_mrpack_information(mrpack_path)
+        except Exception:
+            print(f"{mrpack_path} is not a valid .mrpack File")
+
+        mrpack_install_options: minecraft_launcher_lib.types.MrpackInstallOptions = {"optionalFiles": []}
+        for i in mrpack_information["optionalFiles"]:
+            mrpack_install_options["optionalFiles"].append(i)
+        with open("settings.json", "r") as f:
+            data = json.load(f)
+
+        mc_dir = data["Minecraft-home"]
+        dir = str(dir).replace("/mods", "")
+        mrpackManager.install_mrpack(mrpack_path, mc_dir, modpack_directory=dir, mrpack_install_options=mrpack_install_options, callback={"setStatus": print})
+        if os.path.exists(f"{dir}/config"):
+            shutil.move(f"{dir}/config", f"{mc_dir}")
+        if os.path.exists(f"{dir}/resourcepacks"):
+            shutil.move(f"{dir}/resourcepacks", f"{mc_dir}")
+        if os.path.exists(f"{dir}/shaderpacks"):
+            shutil.move(f"{dir}/shaderpacks", f"{mc_dir}")
+
+        print("Modpack installed successfully.")
+        os.remove(filepath)
 class Manager:
     def doesInstanceHaveMods(dir):
         try:

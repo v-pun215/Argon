@@ -25,3 +25,19 @@ v1.1
 4. Reduced loading times (by 10s+) by removing the Minecraft news on homepage, and replacing it with some stats.
 5. Added many more instance icon options.
 6. Added new icon (clock.png) for the homepage stats
+
+v1.2
+1. Fixed many bugs.
+2. Added (basic) modrinth modpack .mrpack support.
+3. Started working on a music player built into the launcher.
+4. Fixed a bug in favorite instance, where it would return incorrect instance.
+5. Changed the total time played to return only minutes if not played more than an hour.
+6. Fixed display bug in the instance settings window that doesnt show all the new instance icons.
+7. Added a Installed option in the add instance window, which allows you to set an already installed version to your instance. Also made the add instance window smaller since it was wasting space.
+8. If version is not installed, then it is automatically installed on launch.
+9. Fixed critical bug where vanilla snapshots are not able to launch.
+10. Added a new option in settings to view and delete Minecraft logs.
+11. Fixed critical bug which impacted launching of all versions in Offline mode.
+12. Added the ability to launch minecraft without internet access (offline)!
+13. Quilt support is being considered.
+14. Made minor changes in the installer
