@@ -36,12 +36,19 @@ from threading import Thread
 from CTkScrollableDropdown import *
 import mods
 import os
-import playTime
+currn_dir = os.getcwd()
 from pypresence import Presence
 import shutil
 
-# Dear code viewer, how was your day? :D
 
+
+if not os.path.exists(r"{}/settings.json".format(currn_dir)):
+    subprocess.Popen(["python", "signin.py"])
+    sys.exit()
+else:
+    pass
+# Dear code viewer, how was your day? :D
+import playTime
 def check_internet(url='https://www.google.com', timeout=5):
     '''
     Checks if the internet is connected or not.
@@ -63,7 +70,7 @@ starttime = time.time()
 
 '''Argon Metadata'''
 author = "v-pun215"
-version = "1.2"
+version = "1.3"
 description = "A feature-rich minecraft launcher built in Python."
 ''''''
 
@@ -88,14 +95,10 @@ currn_dir = os.getcwd()
 usr_accnt = str(Path.home()).replace("\\", "/").split("/")[-1]
 mc_dir = r"C:\\users\\{}\\AppData\\Roaming\\.minecraft".format(usr_accnt)
 svmem = psutil.virtual_memory()
-if not os.path.exists(r"{}/settings.json".format(currn_dir)):
-    subprocess.Popen(["python", "welcome.py"])
-    sys.exit()
-else:
-    pass
 
 
-ct.set_appearance_mode("System")  # Modes: "System" (standard), "Dark", "Light"
+
+
 ct.set_default_color_theme("blue")  # Themes: "blue" (standard), "green", "dark-blue"
 myappid = u'vpun215.argon.release.2.0' # arbitrary string
 ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
@@ -143,10 +146,38 @@ ramlimiterExceptionBypassed = data["settings"][0]["ramlimiterExceptionBypassed"]
 ramlimiterExceptionBypassedSelected = data["settings"][0]["ramlimiterExceptionBypassedSelected"]
 verbose = data["settings"][0]["verbose"]
 refresh_token = data["Microsoft-settings"][0]["refresh_token"]
+customBackground = data["settings"][0]["customBackground"]
+theme = data["settings"][0]["theme"]
 
-if username == None:
-    subprocess.Popen(["pyw", "welcome.pyw"])
-    sys.exit()
+def detect_darkmode_in_windows(): 
+    try:
+        import winreg
+    except ImportError:
+        return False
+    registry = winreg.ConnectRegistry(None, winreg.HKEY_CURRENT_USER)
+    reg_keypath = r'SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize'
+    try:
+        reg_key = winreg.OpenKey(registry, reg_keypath)
+    except FileNotFoundError:
+        return False
+
+    for i in range(1024):
+        try:
+            value_name, value, _ = winreg.EnumValue(reg_key, i)
+            if value_name == 'AppsUseLightTheme':
+                return value == 0
+        except OSError:
+            break
+    return False
+if theme == "System":
+    if detect_darkmode_in_windows() == True:
+        actualTheme = "dark"
+    else:
+        actualTheme = "light"
+else:
+    actualTheme = theme.lower()
+ct.set_appearance_mode(theme)
+
 def reload_data():
     global mc_home
     global username
@@ -176,11 +207,13 @@ def reload_data():
     os_name = data["PC-info"][0]["OS"]
     mc_home = data["Minecraft-home"]
     username = data["User-info"][0]["username"]
+    cracked_password = data["User-info"][0]["cracked_password"]
     uid = data["User-info"][0]["UUID"]
     accessToken = data["accessToken"]
     mc_dir = data["Minecraft-home"]
     auth_type = data["User-info"][0]["AUTH_TYPE"]
     selected_ver = data["selected-version"]
+    selected_inst = data["selected-instance"]
     allocated_ram = data["settings"][0]["allocated_ram"]
     jvm_args = data["settings"][0]["jvm-args"]
     javaPath = data["settings"][0]["executablePath"]
@@ -188,27 +221,9 @@ def reload_data():
     ramlimiterExceptionBypassedSelected = data["settings"][0]["ramlimiterExceptionBypassedSelected"]
     verbose = data["settings"][0]["verbose"]
     refresh_token = data["Microsoft-settings"][0]["refresh_token"]
-    cracked_password = data["User-info"][0]["cracked_password"]
+    customBackground = data["settings"][0]["customBackground"]
+    theme = data["settings"][0]["theme"]
 
-    ''' Connect to Discord RPC '''
-    global RPC
-    try:
-        RPC = Presence(discordClient) 
-        RPC.connect()
-    except:
-        print("Discord not found running, not connecting to RPC.")
-        class Presence:
-            def __init__(self):
-                pass
-            def connect(self, **kwargs):
-                pass
-            def update(self, **kwargs):
-                pass
-        RPC = Presence()
-
-
-
-    RPC.update(state="In the launcher", large_image="large", small_image="small", large_text="launcher")
 
 
 if os.path.exists(r"C:/Users/{}/AppData/Roaming/.minecraft".format(usr_accnt)):
@@ -524,9 +539,9 @@ class Argon(ct.CTk):
         self.skin_head = ct.CTkImage(light_image=self.username_head_img, dark_image=self.username_head_img, size=skin_size)
         self.skin_head_label = ct.CTkLabel(self.sidebar_frame,text="",image=self.skin_head, bg_color="transparent")
         self.skin_head_label.place(x=10 if auth_type=="Offline" else 10, y=10)
-        self.login_label = ct.CTkLabel(self.sidebar_frame, text="Logged in as", font=ct.CTkFont(size=16, family="Inter"), anchor="w", text_color="#b3b3b3")
+        self.login_label = ct.CTkLabel(self.sidebar_frame, text="Logged in as", font=ct.CTkFont(size=16, family="Inter"), anchor="w", text_color="#b3b3b3" if actualTheme == "dark" else "#585858")
         self.login_label.place(x=75, y=8)
-        self.username_label = ct.CTkLabel(self.sidebar_frame, text=username, font=ct.CTkFont(size=20, weight="bold", family="Inter"), anchor="w", text_color="white", bg_color="transparent", fg_color="transparent")
+        self.username_label = ct.CTkLabel(self.sidebar_frame, text=username, font=ct.CTkFont(size=20, weight="bold", family="Inter"), anchor="w", bg_color="transparent", fg_color="transparent")
         self.username_label.place(x=75, y=31)
         self.home_img = ct.CTkImage(light_image=Image.open("img/home.png"), dark_image=Image.open("img/home.png"), size=(23, 17))
         self.inst_img = ct.CTkImage(light_image=Image.open("img/inst.png"), dark_image=Image.open("img/inst.png"), size=(23,17))
@@ -554,9 +569,9 @@ class Argon(ct.CTk):
         latestSnapshot = f"vanilla snapshot {ltvers['snapshot']}"
         self.pinned_inst = {}
         
-        self.pinned_inst1 = ct.CTkButton(self.sidebar_frame,text="Latest Release",image=self.release_img, font=ct.CTkFont(size=15, family="Inter"), command=lambda: self.choose_inst("Latest Release", latestRelease), height=30, width=200, corner_radius=0, anchor="w", fg_color="transparent", bg_color="#262626", hover_color="#1a1a1a", compound="left")
+        self.pinned_inst1 = ct.CTkButton(self.sidebar_frame,text_color="white" if actualTheme == "dark" else "black",text="Latest Release",image=self.release_img, font=ct.CTkFont(size=15, family="Inter"), command=lambda: self.choose_inst("Latest Release", latestRelease), height=30, width=200, corner_radius=0, anchor="w", fg_color="transparent", bg_color="#262626" if actualTheme == "dark" else "#cacaca", hover_color="#1a1a1a" if actualTheme == "dark" else "#b8b8b8", compound="left")
         self.pinned_inst1.place(x=0, y=210)
-        self.pinned_inst2 = ct.CTkButton(self.sidebar_frame,text="Latest Snapshot",image=self.snapshot_img, font=ct.CTkFont(size=15, family="Inter"), command=lambda: self.choose_inst("Latest Snapshot", latestSnapshot), height=30, width=200, corner_radius=0, anchor="w", fg_color="transparent", bg_color="transparent", hover_color="#1a1a1a", compound="left")
+        self.pinned_inst2 = ct.CTkButton(self.sidebar_frame,text_color="white" if actualTheme == "dark" else "black",text="Latest Snapshot",image=self.snapshot_img, font=ct.CTkFont(size=15, family="Inter"), command=lambda: self.choose_inst("Latest Snapshot", latestSnapshot), height=30, width=200, corner_radius=0, anchor="w", fg_color="transparent", bg_color="transparent", hover_color="#1a1a1a" if actualTheme == "dark" else "#b8b8b8", compound="left")
         self.pinned_inst2.place(x=0, y=240)
         '''for i in range(3, 12):
             pinned_text = getattr(self, f"pinned{i-2}")
@@ -571,9 +586,15 @@ class Argon(ct.CTk):
         for i in range(1, 10):
             pinned_text = getattr(self, f"pinned{i}")
             pinned_img = getattr(self, f"pinned{i}_img")
-            fg_color = "#262626" if i % 2 != 0 else "transparent"
-            hover_color = "#1a1a1a"
-            self.pinned_inst[f"pinned{i}"] = ct.CTkButton(self.sidebar_frame, text=pinned_text, image=pinned_img, font=ct.CTkFont(size=15, family="Inter"), command=lambda pinned_text=pinned_text: self.select_pinned_instance(pinned_text), height=30, width=200, corner_radius=0, anchor="w", state=self.state_pinned[f"state_pinned{i}"], fg_color=fg_color, hover_color=hover_color)
+            if actualTheme == "dark":
+                themeText = "white" 
+                fg_color = "#262626" if i % 2 != 0 else "transparent"
+                hover_color = "#1a1a1a"
+            else:
+                themeText = "black"
+                fg_color = "#cacaca" if i % 2 != 0 else "transparent"
+                hover_color = "#b8b8b8"
+            self.pinned_inst[f"pinned{i}"] = ct.CTkButton(self.sidebar_frame,text_color=themeText , text=pinned_text, image=pinned_img, font=ct.CTkFont(size=15, family="Inter"), command=lambda pinned_text=pinned_text: self.select_pinned_instance(pinned_text), height=30, width=200, corner_radius=0, anchor="w", state=self.state_pinned[f"state_pinned{i}"], fg_color=fg_color, hover_color=hover_color)
             self.pinned_inst[f"pinned{i}"].place(x=0, y=210 + (i + 1) * 30)
 
         '''
@@ -648,17 +669,29 @@ class Argon(ct.CTk):
         self.ch_frame = ct.CTkFrame(self, corner_radius=0, height=600, fg_color="transparent")
         self.ch_frame.grid(row=0, column=1, sticky="nsew")
         self.ch_frame.grid_columnconfigure(0, weight=1)
-        self.logo_image = ct.CTkImage(light_image=Image.open("img/logo.png"),dark_image=Image.open("img/logo.png"), size=(70, 70))
+        if True in customBackground:
+            backgroundImage = customBackground[1]
+            customBG = True
+            self.background_image = ct.CTkImage(light_image=Image.open(backgroundImage), dark_image=Image.open(backgroundImage), size=(1024, 600))
+            self.background_label = ct.CTkLabel(self.ch_frame, text="", image=self.background_image, bg_color="transparent")
+            self.background_label.place(x=0, y=0)
+        else:
+            customBG = False
+        #self.logo_image = ct.CTkImage(light_image=Image.open("img/logo.png"),dark_image=Image.open("img/logo.png"), size=(70, 70))
         #self.image_label = ct.CTkLabel(self.ch_frame, image=self.logo_image, text="", bg_color="transparent")
         #self.image_label.place(x=195, y=20)
         #self.ch_label = ct.CTkLabel(self.ch_frame, text="Argon Launcher", font=ct.CTkFont(size=40, weight="bold", family="Inter"), fg_color="transparent")
         #self.ch_label.place(x=275, y=30)
         self.logo_img = ct.CTkImage(light_image=Image.open("img/argon.png"), dark_image=Image.open("img/argon.png"), size=(300, 100))
-        self.logo_label = ct.CTkLabel(self.ch_frame, text="",image=self.logo_img, bg_color="transparent")
+        self.logo_label = ct.CTkLabel(self.ch_frame, text="",image=self.logo_img, bg_color="#000001" if customBG == True else "transparent")
         self.logo_label.place(relx=0.5, rely=0.2, anchor="center")
+        if customBG:
+            pywinstyles.set_opacity(self.logo_label, color="#000001")
         # Statistics Frame
-        self.stat_frame = ct.CTkFrame(self.ch_frame, corner_radius=10, height=300,width=600, bg_color="transparent")
+        self.stat_frame = ct.CTkFrame(self.ch_frame, corner_radius=10, height=300,width=600, bg_color="#000001" if customBG == True else "transparent")
         self.stat_frame.place(relx=0.5, rely=0.6, anchor="center")
+        if customBG:
+            pywinstyles.set_opacity(self.stat_frame, color="#000001")
         curnTime = datetime.datetime.now()
         if curnTime.hour < 12:
             greeting = "Good morning"
@@ -666,7 +699,7 @@ class Argon(ct.CTk):
             greeting = "Good afternoon"
         else:
             greeting = "Good evening"
-        self.greeting = ct.CTkLabel(self.stat_frame, text=greeting+", "+ username + ".", font=ct.CTkFont(size=30, weight="bold", family="Inter"), text_color="white", bg_color="transparent", anchor="center")
+        self.greeting = ct.CTkLabel(self.stat_frame, text=greeting+", "+ username + ".", font=ct.CTkFont(size=30, weight="bold", family="Inter"), bg_color="transparent", anchor="center")
         self.greeting.place(relx=0.03, rely=0.1, anchor="w")
 
         #self.news_buttn = ct.CTkButton(self.stat_frame, text="Minecraft News", font=ct.CTkFont(size=15, family="Inter"), height=30, width=120, corner_radius=5, anchor="w", fg_color="#212121", bg_color="transparent", hover_color="#1a1a1a")
@@ -675,22 +708,22 @@ class Argon(ct.CTk):
         self.time_frame = ct.CTkFrame(self.stat_frame, corner_radius=10, height=220, width=570, bg_color="transparent")
         self.time_frame.place(relx=0.5, rely=0.5675, anchor="center")
 
-        self.title_of_tf = ct.CTkLabel(self.time_frame, text="Total Time Played", font=ct.CTkFont(size=20, weight="bold", family="Inter"), text_color="white", bg_color="transparent")
+        self.title_of_tf = ct.CTkLabel(self.time_frame, text="Total Time Played", font=ct.CTkFont(size=20, weight="bold", family="Inter"), bg_color="transparent")
         self.title_of_tf.place(relx=0.025, rely=0.1, anchor="w")
         self.time_img = ct.CTkImage(light_image=Image.open("img/clock.png"), dark_image=Image.open("img/clock.png"), size=(30, 30))
         self.time_img_label = ct.CTkLabel(self.time_frame, text="", image=self.time_img, bg_color="transparent", corner_radius=5)
         self.time_img_label.place(relx=0.025, rely=0.25, anchor="w")
-        self.time_label = ct.CTkLabel(self.time_frame, text=playTime.fancyTimeToWords(playTime.getTotalTimePlayed()), font=ct.CTkFont(size=27, family="Inter"), text_color="white", bg_color="transparent")
+        self.time_label = ct.CTkLabel(self.time_frame, text=playTime.fancyTimeToWords(playTime.getTotalTimePlayed()), font=ct.CTkFont(size=27, family="Inter"), bg_color="transparent")
         self.time_label.place(relx=0.1, rely=0.25, anchor="w")
 
-        self.title_of_tf = ct.CTkLabel(self.time_frame, text="Favorite Instance", font=ct.CTkFont(size=20, weight="bold", family="Inter"), text_color="white", bg_color="transparent")     
+        self.title_of_tf = ct.CTkLabel(self.time_frame, text="Favorite Instance", font=ct.CTkFont(size=20, weight="bold", family="Inter"), bg_color="transparent")     
         self.title_of_tf.place(relx=0.025, rely=0.55, anchor="w")   
 
         self.fav_img = ct.CTkImage(light_image=Image.open("img/instance_icons/"+playTime.getFavInstIcon()+".png"), dark_image=Image.open("img/instance_icons/"+playTime.getFavInstIcon()+".png"), size=(30, 30))
         self.fav_img_label = ct.CTkLabel(self.time_frame, text="", image=self.fav_img, bg_color="transparent", corner_radius=5)
         self.fav_img_label.place(relx=0.025, rely=0.7, anchor="w")
 
-        self.fav_inst_label = ct.CTkLabel(self.time_frame, text=playTime.getFavInstance(), font=ct.CTkFont(size=27, family="Inter"), text_color="white", bg_color="transparent")
+        self.fav_inst_label = ct.CTkLabel(self.time_frame, text=playTime.getFavInstance(), font=ct.CTkFont(size=27, family="Inter"), bg_color="transparent")
         self.fav_inst_label.place(relx=0.1, rely=0.7, anchor="w")
         ''' Another update...
         def switchMuFra():
@@ -781,7 +814,7 @@ class Argon(ct.CTk):
         self.inst_title.place(x=40, y=20)
         self.add_inst_button = ct.CTkButton(self.inst_frame, text="Add Instance", font=ct.CTkFont(size=15, family="Inter"), command=self.showAddInstanceWindow, height=30, width=120, corner_radius=5, anchor="center")
         self.add_inst_button.place(x=680, y=35)
-        self.inst_list = ct.CTkScrollableFrame(self.inst_frame, corner_radius=8, height=468,width=765, fg_color="#2b2b2b", bg_color="transparent")
+        self.inst_list = ct.CTkScrollableFrame(self.inst_frame, corner_radius=8, height=468,width=765, bg_color="transparent")
         self.inst_list.place(relx=0.501, rely=0.55, anchor="center")
         instance_frames = {}
 
@@ -793,7 +826,7 @@ class Argon(ct.CTk):
             for instance_name, instance_data_list in instance_dict.items():
                 instance_data = instance_data_list[0]
 
-                frame = ct.CTkFrame(self.inst_list, corner_radius=7, height=125, width=745, fg_color="#262626")
+                frame = ct.CTkFrame(self.inst_list, corner_radius=7, height=125, width=745, fg_color="#262626" if actualTheme=="dark" else "#cacaca")
                 frame.grid(row=row_index, column=0, sticky="nsew", pady=7, padx=7)
                 
                 img = ct.CTkImage(light_image=get_icon_PIL(instance_data["icon"]), dark_image=get_icon_PIL(instance_data["icon"]), size=(50,50))
@@ -803,7 +836,7 @@ class Argon(ct.CTk):
                 name_label = ct.CTkLabel(frame, text=instance_data["name"], font=ct.CTkFont(size=30, weight="bold", family="Inter"), bg_color="transparent")
                 name_label.place(x=70, y=13)
 
-                version_label = ct.CTkLabel(frame, text=str(instance_data["method"]).capitalize() + " " + str(instance_data["type"]).capitalize() + " " + instance_data["version"], font=ct.CTkFont(size=15, family="Inter"), bg_color="transparent", text_color="#b3b3b3")
+                version_label = ct.CTkLabel(frame, text=str(instance_data["method"]).capitalize() + " " + str(instance_data["type"]).capitalize() + " " + instance_data["version"], font=ct.CTkFont(size=15, family="Inter"), bg_color="transparent", text_color="#b3b3b3" if actualTheme == "dark" else "#585858")
                 version_label.place(x=70, y=50)
 
                 select_button = ct.CTkButton(frame, text="Select", font=ct.CTkFont(size=15, family="Inter"), command=functools.partial(self.choose_inst, instance_data["name"], instance_data["method"] + " " + instance_data["type"] + " " + instance_data["version"]), height=30, width=80, corner_radius=5, anchor="center")
@@ -817,10 +850,10 @@ class Argon(ct.CTk):
                 var_name = "self.pinned_var"+str(row_index)
                 pinned_var = ct.StringVar(value="on" if instance_data["pinned"] else "off")
                 #globals()[var_name] = pinned_var
-                pinned_checkbox = ct.CTkCheckBox(frame,text="", corner_radius=5, fg_color="white", bg_color="#262626", command=lambda name=instance_data["name"], icon=instance_data["icon"], pinD_var=pinned_var, inst_name=instance_name: self.pinInstance(name, icon, pinD_var, inst_name), variable=pinned_var, onvalue="on",offvalue="off", checkbox_height=20, checkbox_width=20)
+                pinned_checkbox = ct.CTkCheckBox(frame,text="", corner_radius=5, fg_color="white" if actualTheme == "dark" else "#1a1a1a", bg_color="transparent", command=lambda name=instance_data["name"], icon=instance_data["icon"], pinD_var=pinned_var, inst_name=instance_name: self.pinInstance(name, icon, pinD_var, inst_name), variable=pinned_var, onvalue="on",offvalue="off", checkbox_height=20, checkbox_width=20)
                 pinned_checkbox.place(x=75, y=85)
 
-                time_label = ct.CTkLabel(frame, text="Played for " +playTime.timeToWords(instance_data["timePlayed"]), font=ct.CTkFont(size=15, family="Inter"), bg_color="transparent", text_color="#b3b3b3")
+                time_label = ct.CTkLabel(frame, text="Played for " +playTime.timeToWords(instance_data["timePlayed"]), font=ct.CTkFont(size=15, family="Inter"), bg_color="transparent", text_color="#b3b3b3" if actualTheme == "dark" else "#585858")
                 time_label.place(x=580, y=85)
 
                 # Store the frame in the dictionary
@@ -865,13 +898,13 @@ class Argon(ct.CTk):
 
         self.mc_settings_frame = ct.CTkFrame(self.settings_frame, height=400, width=780, bg_color="transparent", fg_color="transparent")
         self.mc_settings_frame.place(relx=0.5, rely=0.52, anchor="center")
-        self.mc_dir_labl = ct.CTkLabel(self.mc_settings_frame, text="Minecraft Directory", font=ct.CTkFont(size=25, family="Inter"), fg_color="transparent", text_color="white")
+        self.mc_dir_labl = ct.CTkLabel(self.mc_settings_frame, text="Minecraft Directory", font=ct.CTkFont(size=25, family="Inter"), fg_color="transparent")
         self.mc_dir_labl.place(x=20, y=10)
         mc_dir_var = ct.StringVar(value=mc_dir)
         self.mc_dir_entry = ct.CTkEntry(self.mc_settings_frame, font=ct.CTkFont(size=20, family="Inter"), width=500, corner_radius=5, textvariable=mc_dir_var)
         self.mc_dir_entry.place(x=20, y=50)
 
-        self.ram_label = ct.CTkLabel(self.mc_settings_frame, text="RAM Allocation", font=ct.CTkFont(size=25, family="Inter"), fg_color="transparent", text_color="white")
+        self.ram_label = ct.CTkLabel(self.mc_settings_frame, text="RAM Allocation", font=ct.CTkFont(size=25, family="Inter"), fg_color="transparent")
         self.ram_label.place(x=20, y=100)
         with open ("settings.json", "r") as js_read:
             s = js_read.read()
@@ -895,7 +928,7 @@ class Argon(ct.CTk):
         self.sel_ram.place(x=20, y=165)
         self.total_ram = ct.CTkLabel(self.mc_settings_frame, text=f"Total RAM: {total_ram}MB", font=ct.CTkFont(size=15, family="Inter"), fg_color="transparent", text_color="#7a7a7a")
         self.total_ram.place(x=20, y=190)
-        self.bypass_label = ct.CTkLabel(self.mc_settings_frame, text="Bypass RAM Limiter", font=ct.CTkFont(size=25, family="Inter"), fg_color="transparent", text_color="white")
+        self.bypass_label = ct.CTkLabel(self.mc_settings_frame, text="Bypass RAM Limiter", font=ct.CTkFont(size=25, family="Inter"), fg_color="transparent")
         self.bypass_label.place(x=20, y=220)
         if ramlimiterExceptionBypassed == True:
             switch_var = ct.StringVar(value="on")
@@ -966,8 +999,8 @@ class Argon(ct.CTk):
         
         self.argon_settings_frame = ct.CTkFrame(self.settings_frame, height=400, width=780, bg_color="transparent", fg_color="transparent")
         self.argon_settings_frame.place(relx=0.5, rely=0.52, anchor="center")
-        self.WIP_label = ct.CTkLabel(self.argon_settings_frame, text="Work in Progress", font=ct.CTkFont(size=30, family="Inter"), fg_color="transparent", text_color="#b3b3b3")
-        self.WIP_label.place(relx=0.5, rely=0.45, anchor="center")
+        #self.WIP_label = ct.CTkLabel(self.argon_settings_frame, text="Work in Progress", font=ct.CTkFont(size=30, family="Inter"), fg_color="transparent", text_color="#b3b3b3")
+        #self.WIP_label.place(relx=0.5, rely=0.45, anchor="center")
         #self.verbose_label = ct.CTkLabel(self.argon_settings_frame, text="Verbose Mode", font=ct.CTkFont(size=25, family="Inter"), fg_color="transparent", text_color="white")
         #self.verbose_label.place(x=20, y=10)
         #if verbose == True:
@@ -977,8 +1010,102 @@ class Argon(ct.CTk):
         #self.verbose_switch = ct.CTkSwitch(self.argon_settings_frame, width=50, height=30, corner_radius=15, bg_color="transparent", fg_color="white", text="", variable=verbose_var, onvalue="on", offvalue="off")
         #self.verbose_switch.place(x=220, y=10)
 
-        #self.save_button = ct.CTkButton(self.argon_settings_frame, text="Save", font=ct.CTkFont(size=20, family="Inter"), command=save_settings, height=30, width=100, corner_radius=5, anchor="center")
-        #self.save_button.place(relx = 0.5, rely=0.95, anchor="center")
+        self.customization_label = ct.CTkLabel(self.argon_settings_frame, text="Customization", font=ct.CTkFont(size=25, family="Inter", weight="bold"), fg_color="transparent")
+        self.customization_label.place(x=20, y=10)
+        self.custom_back_label = ct.CTkLabel(self.argon_settings_frame, text="Custom Background", font=ct.CTkFont(size=20, family="Inter"), fg_color="transparent", text_color="#b3b3b3" if actualTheme == "dark" else "#585858")
+        self.custom_back_label.place(x=20, y=50)
+        def openExplorer():
+            filename = ct.filedialog.askopenfilename()
+            self.custom_back_dir_entry.delete(0, "end")
+            self.custom_back_dir_entry.insert(0, filename)
+
+        self.custom_back_dir_entry = ct.CTkEntry(self.argon_settings_frame, placeholder_text="Enter background path..", font=ct.CTkFont(size=20, family="Inter"), width=500, corner_radius=5)
+        self.custom_back_dir_entry.place(x=20, y=90)
+        if not customBackground[1] == "":
+            self.custom_back_dir_entry.insert(0, customBackground[1])
+        else:
+            pass
+        self.openExplorerBTN = ct.CTkButton(self.argon_settings_frame, text="Explore", font=ct.CTkFont(size=15, family="Inter"), command=openExplorer, height=30, width=80, corner_radius=5, anchor="center")
+        self.openExplorerBTN.place(x=530, y=90)
+        self.reset_btn = ct.CTkButton(self.argon_settings_frame, text="Reset", font=ct.CTkFont(size=15, family="Inter"), command=lambda: self.custom_back_dir_entry.delete(0, "end"), height=30, width=80, corner_radius=5, anchor="center")
+        self.reset_btn.place(x=620, y=90)
+        # For some reason, the transparency feature is not working. I will fix it in the next update.
+        #self.blur_label = ct.CTkLabel(self.argon_settings_frame, text="Enable window transparency effects", font=ct.CTkFont(size=20, family="Inter"), fg_color="transparent", text_color="#b3b3b3")
+        #self.blur_label.place(x=20, y=130)
+        #blur_var = ct.StringVar(value="on" if transparency else "off")
+        #self.blur_switch = ct.CTkSwitch(self.argon_settings_frame, width=50, height=30, corner_radius=15, bg_color="transparent", fg_color="white", text="", variable=blur_var, onvalue="on", offvalue="off")
+        #self.blur_switch.place(x=400, y=130)
+        self.theme_label = ct.CTkLabel(self.argon_settings_frame, text="Theme", font=ct.CTkFont(size=20, family="Inter"), fg_color="transparent", text_color="#b3b3b3" if actualTheme == "dark" else "#585858")
+        self.theme_label.place(x=20, y=130)
+        themes = ["System", "Light", "Dark"]
+        with open("settings.json", "r") as js_read:
+            s = js_read.read()
+            s = s.replace('\t','')
+            s = s.replace('\n','')
+            s = s.replace(',}','}')
+            s = s.replace(',]',']')
+            data = json.loads(s)
+        theme_name = data["settings"][0]["theme"]
+        theme_var = ct.StringVar(value=theme_name)
+        self.themes_dropdown = ct.CTkOptionMenu(self.argon_settings_frame, values=themes,variable=theme_var, font=ct.CTkFont(size=15, family="Inter"), width=100, corner_radius=5, button_color="#565b5e", bg_color="transparent", button_hover_color="#3c3e41", fg_color="#343638", hover="#3c3e41")
+        self.themes_dropdown.place(x=100, y=130)
+        #CTkScrollableDropdown(self.themes_dropdown, values=themes, font=ct.CTkFont(size=10, family="Inter"), width=100, frame_corner_radius=5, justify="left")
+
+        def argon_settings_save():
+            with open("settings.json", "r") as js_read:
+                s = js_read.read()
+                s = s.replace('\t','')
+                s = s.replace('\n','')
+                s = s.replace(',}','}')
+                s = s.replace(',]',']')
+                data = json.loads(s)
+            '''
+            if blur_var.get() == "on":
+                data["transparency"] = True
+            else:
+                data["transparency"] = False'''
+
+            backgroundPath = self.custom_back_dir_entry.get()
+            if backgroundPath != data["settings"][0]["customBackground"][1]:
+                if not os.path.exists(backgroundPath):
+                    if backgroundPath == "":
+                        pass
+                    else:
+                        msg.CTkMessagebox(title="Invalid Path", message="The path for custom background image entered is invalid.", icon="cancel")
+                        return
+                if not backgroundPath.endswith((".png", ".jpg", ".jpeg")):
+                    if backgroundPath == "":
+                        pass
+                    else:
+                        msg.CTkMessagebox(title="Invalid Image", message="The image you entered is not supported.", icon="cancel")
+                        return
+                if not backgroundPath == customBackground[1]:
+                    customBackground[1] = backgroundPath
+                    customBackground[0] = True
+                    data["settings"][0]["customBackground"] = customBackground
+                    if backgroundPath == "":
+                        customBackground[0] = False
+
+            if not theme_var.get() == data["settings"][0]["theme"]:
+                data["settings"][0]["theme"] = theme_var.get()
+                theme_name = theme_var.get()
+                restartQ = True
+                
+
+            
+            with open("settings.json", "w") as js_write:
+                json.dump(data, js_write, indent=4)
+            print("Argon settings saved.")
+            message = msg.CTkMessagebox(title="Settings Saved", message="Settings have been saved successfully.", icon="check")
+            message.get()
+            self.refresh_home()
+            if restartQ:
+                self.switchTheme(theme_name)
+
+
+
+        self.save_button = ct.CTkButton(self.argon_settings_frame, text="Save", font=ct.CTkFont(size=15, family="Inter"), command=argon_settings_save, height=30, width=80, corner_radius=5, anchor="center")
+        self.save_button.place(relx = 0.5, rely=0.95, anchor="center")
 
 
 
@@ -1006,7 +1133,7 @@ class Argon(ct.CTk):
             self.skin_label.place(x=190, y=140)
         if auth_type=="Offline":
             self.skin_label.place(x=200, y=140)
-        self.username_labelBig = ct.CTkLabel(self.acc_frame, text=username, font=ct.CTkFont(size=50, weight="bold", family="Inter"), text_color="white", bg_color="transparent")
+        self.username_labelBig = ct.CTkLabel(self.acc_frame, text=username, font=ct.CTkFont(size=50, weight="bold", family="Inter"), bg_color="transparent")
         self.username_labelBig.place(x=350, y=140)
         self.account_label = ct.CTkLabel(self.acc_frame, text=f"{auth_type} Account", font=ct.CTkFont(size=20, family="Inter"), fg_color="transparent", text_color="#7a7a7a")
         self.account_label.place(x=350, y=200)
@@ -1028,7 +1155,10 @@ class Argon(ct.CTk):
         self.select_frame("home")
         endtime = time.time()
         print(f"Argon loaded in {round(endtime - starttime, 2)} seconds.")
-        pywinstyles.change_header_color(self, color="#242424")
+        if actualTheme == "dark":
+            pywinstyles.change_header_color(self, color="#242424")
+        else:
+            pywinstyles.change_header_color(self, color="#ebebeb")
 
     '''  Future Update!
     def loading_screen(self):
@@ -1089,6 +1219,70 @@ class Argon(ct.CTk):
         elif self.instance_settings_var.get() == "Mods":
             self.mods_frame.place(relx=0.5, rely=0.53, anchor="center")
             self.ins_settings_frame.place_forget()
+
+    def refresh_home(self):
+        self.ch_frame = ct.CTkFrame(self, corner_radius=0, height=600, fg_color="transparent")
+        self.ch_frame.grid(row=0, column=1, sticky="nsew")
+        self.ch_frame.grid_columnconfigure(0, weight=1)
+        if True in customBackground:
+            backgroundImage = customBackground[1]
+            customBG = True
+            self.background_image = ct.CTkImage(light_image=Image.open(backgroundImage), dark_image=Image.open(backgroundImage), size=(1024, 600))
+            self.background_label = ct.CTkLabel(self.ch_frame, text="", image=self.background_image, bg_color="transparent")
+            self.background_label.place(x=0, y=0)
+        else:
+            customBG = False
+        #self.logo_image = ct.CTkImage(light_image=Image.open("img/logo.png"),dark_image=Image.open("img/logo.png"), size=(70, 70))
+        #self.image_label = ct.CTkLabel(self.ch_frame, image=self.logo_image, text="", bg_color="transparent")
+        #self.image_label.place(x=195, y=20)
+        #self.ch_label = ct.CTkLabel(self.ch_frame, text="Argon Launcher", font=ct.CTkFont(size=40, weight="bold", family="Inter"), fg_color="transparent")
+        #self.ch_label.place(x=275, y=30)
+        self.logo_img = ct.CTkImage(light_image=Image.open("img/argon.png"), dark_image=Image.open("img/argon.png"), size=(300, 100))
+        self.logo_label = ct.CTkLabel(self.ch_frame, text="",image=self.logo_img, bg_color="#000001" if customBG == True else "transparent")
+        self.logo_label.place(relx=0.5, rely=0.2, anchor="center")
+        if customBG:
+            pywinstyles.set_opacity(self.logo_label, color="#000001")
+        # Statistics Frame
+        self.stat_frame = ct.CTkFrame(self.ch_frame, corner_radius=10, height=300,width=600, bg_color="#000001" if customBG == True else "transparent")
+        self.stat_frame.place(relx=0.5, rely=0.6, anchor="center")
+        if customBG:
+            pywinstyles.set_opacity(self.stat_frame, color="#000001")
+        curnTime = datetime.datetime.now()
+        if curnTime.hour < 12:
+            greeting = "Good morning"
+        elif 12<= curnTime.hour < 18:
+            greeting = "Good afternoon"
+        else:
+            greeting = "Good evening"
+        self.greeting = ct.CTkLabel(self.stat_frame, text=greeting+", "+ username + ".", font=ct.CTkFont(size=30, weight="bold", family="Inter"), bg_color="transparent", anchor="center")
+        self.greeting.place(relx=0.03, rely=0.1, anchor="w")
+
+        #self.news_buttn = ct.CTkButton(self.stat_frame, text="Minecraft News", font=ct.CTkFont(size=15, family="Inter"), height=30, width=120, corner_radius=5, anchor="w", fg_color="#212121", bg_color="transparent", hover_color="#1a1a1a")
+        #self.news_buttn.place(relx=0.75, rely=0.1, anchor="w")
+
+        self.time_frame = ct.CTkFrame(self.stat_frame, corner_radius=10, height=220, width=570, bg_color="transparent")
+        self.time_frame.place(relx=0.5, rely=0.5675, anchor="center")
+
+        self.title_of_tf = ct.CTkLabel(self.time_frame, text="Total Time Played", font=ct.CTkFont(size=20, weight="bold", family="Inter"), bg_color="transparent")
+        self.title_of_tf.place(relx=0.025, rely=0.1, anchor="w")
+        self.time_img = ct.CTkImage(light_image=Image.open("img/clock.png"), dark_image=Image.open("img/clock.png"), size=(30, 30))
+        self.time_img_label = ct.CTkLabel(self.time_frame, text="", image=self.time_img, bg_color="transparent", corner_radius=5)
+        self.time_img_label.place(relx=0.025, rely=0.25, anchor="w")
+        self.time_label = ct.CTkLabel(self.time_frame, text=playTime.fancyTimeToWords(playTime.getTotalTimePlayed()), font=ct.CTkFont(size=27, family="Inter"), bg_color="transparent")
+        self.time_label.place(relx=0.1, rely=0.25, anchor="w")
+
+        self.title_of_tf = ct.CTkLabel(self.time_frame, text="Favorite Instance", font=ct.CTkFont(size=20, weight="bold", family="Inter"), bg_color="transparent")     
+        self.title_of_tf.place(relx=0.025, rely=0.55, anchor="w")   
+
+        self.fav_img = ct.CTkImage(light_image=Image.open("img/instance_icons/"+playTime.getFavInstIcon()+".png"), dark_image=Image.open("img/instance_icons/"+playTime.getFavInstIcon()+".png"), size=(30, 30))
+        self.fav_img_label = ct.CTkLabel(self.time_frame, text="", image=self.fav_img, bg_color="transparent", corner_radius=5)
+        self.fav_img_label.place(relx=0.025, rely=0.7, anchor="w")
+
+        self.fav_inst_label = ct.CTkLabel(self.time_frame, text=playTime.getFavInstance(), font=ct.CTkFont(size=27, family="Inter"), bg_color="transparent")
+        self.fav_inst_label.place(relx=0.1, rely=0.7, anchor="w")
+
+        self.ch_frame.grid_forget()
+
     def instance_settings(self, inst_name, inst_icon, inst_version):
         self.instance_settings_window = ct.CTkToplevel(self)
         self.instance_settings_window.title(f"Instance {inst_name} Settings")
@@ -1103,10 +1297,10 @@ class Argon(ct.CTk):
         self.menubar = ct.CTkSegmentedButton(self.instance_settings_window, values=["Settings", "Mods"], variable=self.instance_settings_var, height=30, width=200, command=self.change_settings_tab)
         self.menubar.place(relx=0.5, y=25, anchor="center")
 
-        self.ins_settings_frame = ct.CTkFrame(self.instance_settings_window, corner_radius=10, height=435, bg_color="#262626", width=770)
+        self.ins_settings_frame = ct.CTkFrame(self.instance_settings_window, corner_radius=10, height=435, width=770)
         self.ins_settings_frame.place(relx=0.5, rely=0.53, anchor="center")
         namevar = ct.StringVar(value=inst_name)
-        self.name_entry = ct.CTkEntry(self.ins_settings_frame, textvariable=namevar, width=300, corner_radius=5,  font=ct.CTkFont(size=25, family="Inter"), fg_color="#404040", bg_color="transparent", placeholder_text="Name", placeholder_text_color="#b3b3b3")
+        self.name_entry = ct.CTkEntry(self.ins_settings_frame, textvariable=namevar, width=300, corner_radius=5,  font=ct.CTkFont(size=25, family="Inter"), bg_color="transparent", placeholder_text="Name", placeholder_text_color="#b3b3b3")
         self.name_entry.place(x=20, y=20)
         self.name_entry.configure
         with open("launcherProfiles.json", "r") as js_read:
@@ -1313,7 +1507,7 @@ class Argon(ct.CTk):
         self.delete_btn.place(x=420, y=370)
 
         '''!!------------------MODS-----------------!!'''
-        self.mods_frame = ct.CTkFrame(self.instance_settings_window, corner_radius=10, height=435, bg_color="#262626", width=770)
+        self.mods_frame = ct.CTkFrame(self.instance_settings_window, corner_radius=10, height=435, width=770)
         self.mods_frame.place(relx=0.5, rely=0.53, anchor="center")
         self.mods_frame.place_forget()
         print(inst_version)
@@ -1321,7 +1515,7 @@ class Argon(ct.CTk):
             method = inst_version.split(" ")[0]
             version = inst_version.split(" ")[2]
             mod_loader = method
-            self.search_box = ct.CTkEntry(self.mods_frame, width=500, corner_radius=5,  font=ct.CTkFont(size=20, family="Inter"), fg_color="#404040", bg_color="transparent", placeholder_text="Search mods...", placeholder_text_color="#b3b3b3")
+            self.search_box = ct.CTkEntry(self.mods_frame, width=500, corner_radius=5,  font=ct.CTkFont(size=20, family="Inter"), bg_color="transparent", placeholder_text="Search mods...", placeholder_text_color="#b3b3b3")
             self.search_box.place(x=10, y=10)
             self.instance_settings_window.bind("<Return>", lambda: self.search_mods(self.search_box.get(), inst_name, inst_version))
             self.search_image = ct.CTkImage(light_image=Image.open("img/search.png"), dark_image=Image.open("img/search.png"), size=(25,25))
@@ -1335,26 +1529,26 @@ class Argon(ct.CTk):
             self.folder_btn = ct.CTkButton(self.mods_frame, text="", image=self.folder_logo, font=ct.CTkFont(size=20, family="Inter"), command=lambda: self.switchToDir(instance_name=inst_name), corner_radius=5, anchor="center", width=25, height=25, bg_color="transparent", fg_color="white", hover_color="#929292")
             self.folder_btn.place(x=715, y=10)
 
-            self.mods_list_frame = ct.CTkScrollableFrame(self.mods_frame, corner_radius=8, height=370, width=750, fg_color="#2b2b2b", bg_color="transparent")
+            self.mods_list_frame = ct.CTkScrollableFrame(self.mods_frame, corner_radius=8, height=370, width=750, fg_color="#2b2b2b" if actualTheme == "dark" else "#dbdbdb", bg_color="transparent")
             self.mods_list_frame.place(relx=0.5, rely=0.54, anchor="center")
 
             self.loading_label = ct.CTkLabel(
                 self.mods_list_frame, 
                 text="Loading...", 
                 font=ct.CTkFont(size=20, family="Inter", weight="bold"), 
-                text_color="#b3b3b3"
+                text_color="#b3b3b3" if actualTheme == "dark" else "#585858"
             )
             self.loading_label.grid(row=0, column=0, sticky="nsew", pady=20, padx=20)
             self.display_data(inst_name, inst_version)
 
 
-            self.directory_frame = ct.CTkScrollableFrame(self.mods_frame, corner_radius=8, height=370, width=750, fg_color="#2b2b2b", bg_color="transparent")
+            self.directory_frame = ct.CTkScrollableFrame(self.mods_frame, corner_radius=8, height=370, width=750, fg_color="#2b2b2b" if actualTheme == "dark" else "#dbdbdb", bg_color="transparent")
             self.directory_frame.place(relx=0.5, rely=0.54, anchor="center")
             self.directory_frame.place_forget()
 
             dir = f"instances\\{inst_name}\\mods"
             if not os.path.exists(dir):
-                self.noMods_label = ct.CTkLabel(self.directory_frame, text="This instance has no mods.", font=ct.CTkFont(size=20, family="Inter"), fg_color="transparent", bg_color="transparent", text_color="#b3b3b3")
+                self.noMods_label = ct.CTkLabel(self.directory_frame, text="This instance has no mods.", font=ct.CTkFont(size=20, family="Inter"), fg_color="transparent", bg_color="transparent", text_color="#b3b3b3" if actualTheme == "dark" else "#585858")
                 self.noMods_label.place(relx=0.5, rely=0.5, anchor="center")
             else:
                 try:
@@ -1377,7 +1571,7 @@ class Argon(ct.CTk):
 
         
         else:
-            self.banner = ct.CTkLabel(self.mods_frame, text="This instance is not modded.", font=ct.CTkFont(size=30, family="Inter"), fg_color="transparent", bg_color="transparent", text_color="#b3b3b3")
+            self.banner = ct.CTkLabel(self.mods_frame, text="This instance is not modded.", font=ct.CTkFont(size=30, family="Inter"), fg_color="transparent", bg_color="transparent", text_color="#b3b3b3" if actualTheme == "dark" else "#585858")
             self.banner.place(relx=0.5, rely=0.5, anchor="center")
 
     def search_mods(self, query, inst_name, inst_version):
@@ -1398,7 +1592,7 @@ class Argon(ct.CTk):
     
     def refresh_mods(self, inst_name):
         self.directory_frame.place_forget()
-        self.directory_frame = ct.CTkScrollableFrame(self.mods_frame, corner_radius=8, height=370, width=750, fg_color="#2b2b2b", bg_color="transparent")
+        self.directory_frame = ct.CTkScrollableFrame(self.mods_frame, corner_radius=8, height=370, width=750, fg_color="#2b2b2b" if actualTheme == "dark" else "#dbdbdb", bg_color="transparent")
         self.directory_frame.place(relx=0.5, rely=0.54, anchor="center")
         dir = f"instances\\{inst_name}\\mods"
         try:
@@ -1407,12 +1601,12 @@ class Argon(ct.CTk):
             os.makedirs(currn_dir + "\\" + dir)
             jar_files = []
         if jar_files == []:
-            self.noMods_label = ct.CTkLabel(self.directory_frame, text="This instance has no mods.", font=ct.CTkFont(size=20, family="Inter"), fg_color="transparent", bg_color="transparent", text_color="#b3b3b3")
+            self.noMods_label = ct.CTkLabel(self.directory_frame, text="This instance has no mods.", font=ct.CTkFont(size=20, family="Inter"), fg_color="transparent", bg_color="transparent", text_color="#b3b3b3" if actualTheme == "dark" else "#585858")
             self.noMods_label.grid(row=0, column=0, sticky="nsew", pady=20, padx=20)
             return
         row_index = 0
         for file in jar_files:
-            self.jar_frame = ct.CTkFrame(self.directory_frame, corner_radius=7, height=50, width=730, fg_color="#373737")
+            self.jar_frame = ct.CTkFrame(self.directory_frame, corner_radius=7, height=50, width=730, fg_color="#373737" if actualTheme == "dark" else "#585858")
             self.jar_frame.grid(row=row_index, column=0, sticky="nsew", pady=7, padx=7)
             self.jar_title = ct.CTkLabel(self.jar_frame, text=file.strip(".jar"), font=ct.CTkFont(size=25, family="Inter"), text_color="white", fg_color="transparent", bg_color="transparent")
             self.jar_title.place(x=10, y=10)
@@ -1482,7 +1676,7 @@ class Argon(ct.CTk):
     def process_data(self, instname, inst_version, list2):
         # ---- MODS FRAME ------
         if connected == False:
-            self.no_internet_label = ct.CTkLabel(self.mods_list_frame, text="No internet connection.", text_color="#b3b3b3", font=ct.CTkFont(size=20, family="Inter"))
+            self.no_internet_label = ct.CTkLabel(self.mods_list_frame, text="No internet connection.", text_color="#b3b3b3" if actualTheme == "dark" else "#585858", font=ct.CTkFont(size=20, family="Inter"))
             self.no_internet_label.grid(row=0, column=0, sticky="nsew", pady=20, padx=20)
             return
         mod_loader = inst_version.split(" ")[0]
@@ -1492,13 +1686,13 @@ class Argon(ct.CTk):
                 self.mods_list_frame, 
                 text="Loading...", 
                 font=ct.CTkFont(size=16, family="Inter", weight="bold"), 
-                text_color="#b3b3b3"
+                text_color="#b3b3b3" if actualTheme == "dark" else "#585858"
             )
             self.loading_label.place(relx=0.5, rely=0.5, anchor="center")
             self.display_data()
             return
         row_index = 0
-        self.no_mods_found_label = ct.CTkLabel(self.mods_list_frame, text="No mods found for that query.", text_color="#b3b3b3")
+        self.no_mods_found_label = ct.CTkLabel(self.mods_list_frame, text="No mods found for that query.", text_color="#b3b3b3" if actualTheme == "dark" else "#585858")
         for mod in list2:
             if mod["project_type"] == "resourcepack" or mod["project_type"] == "shader":
                 break
@@ -1507,7 +1701,7 @@ class Argon(ct.CTk):
                 corner_radius=7,
                 height=100,
                 width=730,
-                fg_color="#373737",
+                fg_color="#373737" if actualTheme == "dark" else "#c0c0c0",
             )
             self.mod_frame.grid(row=row_index, column=0, sticky="nsew", pady=7, padx=7)
             icon_url = mod["icon_url"]
@@ -1526,7 +1720,6 @@ class Argon(ct.CTk):
                 self.mod_frame,
                 text=mod["title"] if mod_type != "Modpack" else mod["title"] + " (Modpack)",
                 font=ct.CTkFont(size=25, family="Inter", weight="bold"),
-                text_color="white",
                 fg_color="transparent",
                 bg_color="transparent",
             )
@@ -1537,11 +1730,11 @@ class Argon(ct.CTk):
                 self.mod_frame,
                 text=mod_type if mod_type != "None" else "Mod",
                 font=ct.CTkFont(size=15, family="Inter"),
-                text_color="#b3b3b3",
+                text_color="#b3b3b3" if actualTheme == "dark" else "#585858",
                 fg_color="transparent",
                 bg_color="transparent",
             )
-            self.description = ct.CTkLabel(self.mod_frame, text=mod["description"], font=ct.CTkFont(size=15, family="Inter"), text_color="#b3b3b3", fg_color="transparent", bg_color="transparent", wraplength=420, justify="left")
+            self.description = ct.CTkLabel(self.mod_frame, text=mod["description"], font=ct.CTkFont(size=15, family="Inter"), text_color="#b3b3b3" if actualTheme == "dark" else "#585858", fg_color="transparent", bg_color="transparent", wraplength=420, justify="left")
             self.description.place(x=110, y=40)
             self.down_img = ct.CTkImage(light_image=Image.open("img/download.png"), dark_image=Image.open("img/download.png"), size=(20, 20))
             if not mc_version in mod["versions"]:
@@ -1624,9 +1817,34 @@ class Argon(ct.CTk):
 
             os.remove("launcherProfiles.json")
             os.remove("settings.json")
-            msg.CTkMessagebox(title="Sign Out", message="You have been signed out.", icon="check")
+            msg.CTkMessagebox(title="Signed Out", message="You have been signed out.", icon="check")
+            self.destroy()
+            os.system("python signin.py")
         else:
             pass
+
+
+    def switchTheme(self, theme_name):
+        '''
+        Switches theme between Light, System and Dark
+        '''
+        self.withdraw()
+        self.changing_theme_window = ct.CTkToplevel(self)
+        self.changing_theme_window.title("Changing Theme")
+        self.changing_theme_window.geometry("400x200")
+        self.changing_theme_window.resizable(False, False)
+        self.changing_theme_window.after(200, lambda: self.changing_theme_window.iconbitmap("img/icon.ico"))
+        self.changing_theme_window.grab_set()
+        def passeee():
+            pass
+        self.changing_theme_window.protocol("WM_DELETE_WINDOW", passeee)
+        self.labelee = ct.CTkLabel(self.changing_theme_window, text="Changing theme...", font=ct.CTkFont(size=20, family="Inter"))
+        self.labelee.place(relx=0.5, rely=0.5, anchor="center")
+        self.destroy()
+        self.restartArgon()
+    def restartArgon(self):
+        os.execl(sys.executable, os.path.abspath(__file__), *sys.argv)
+
     def refresh_instances(self):
         self.inst_list.destroy()
         
@@ -1708,11 +1926,16 @@ class Argon(ct.CTk):
 
     def select_frame(self, name):
         # set button color for selected button
-        self.home.configure(fg_color=("#1f6aa5", "#1f6aa5") if name == "home" else "#404040", hover_color=("#144870") if name == "home" else "#333333")
-        self.inst.configure(fg_color=("#1f6aa5", "#1f6aa5") if name == "installations" else "#404040", hover_color=("#144870") if name == "installations" else "#333333")
-        self.settings.configure(fg_color=("#1f6aa5", "#1f6aa5") if name == "settings" else "#404040", hover_color=("#144870") if name == "settings" else "#333333")
-        self.account.configure(fg_color=("#1f6aa5", "#1f6aa5") if name == "account" else "#404040", hover_color=("#144870") if name == "account" else "#333333")
-
+        if actualTheme == "dark":
+            self.home.configure(fg_color=("#1f6aa5", "#1f6aa5") if name == "home" else "#404040", hover_color=("#144870") if name == "home" else "#333333")
+            self.inst.configure(fg_color=("#1f6aa5", "#1f6aa5") if name == "installations" else "#404040", hover_color=("#144870") if name == "installations" else "#333333")
+            self.settings.configure(fg_color=("#1f6aa5", "#1f6aa5") if name == "settings" else "#404040", hover_color=("#144870") if name == "settings" else "#333333")
+            self.account.configure(fg_color=("#1f6aa5", "#1f6aa5") if name == "account" else "#404040", hover_color=("#144870") if name == "account" else "#333333")
+        elif actualTheme == "light":
+            self.home.configure(text_color="white" if name == "home" else "#1a1a1a",fg_color=("#1f6aa5", "#1f6aa5") if name == "home" else "#c0c0c0", hover_color=("#144870") if name == "home" else "#b9b9b9")
+            self.inst.configure(text_color="white" if name == "installations" else "#1a1a1a",fg_color=("#1f6aa5", "#1f6aa5") if name == "installations" else "#c0c0c0", hover_color=("#144870") if name == "installations" else "#b9b9b9")
+            self.settings.configure(text_color="white" if name == "settings" else "#1a1a1a",fg_color=("#1f6aa5", "#1f6aa5") if name == "settings" else "#c0c0c0", hover_color=("#144870") if name == "settings" else "#b9b9b9")
+            self.account.configure(text_color="white" if name == "account" else "#1a1a1a",fg_color=("#1f6aa5", "#1f6aa5") if name == "account" else "#c0c0c0", hover_color=("#144870") if name == "account" else "#b9b9b9")
         # show selected frame
         if name == "home":
             self.ch_frame.grid(row=0, column=1, sticky="nsew")
@@ -2010,7 +2233,7 @@ class Argon(ct.CTk):
             else:
                 self.chosen_version_alone = var
             print(get_version_method(var),var)
-        self.version_dropdown = ct.CTkComboBox(self.addInstance_window, command=change_version, values=self.vanilla_versions, variable=version_var, font=ct.CTkFont(size=15, family="Inter"), width=200, button_color="#565b5e", bg_color="transparent", button_hover_color="#3c3e41", fg_color="#343638", hover="#3c3e41")
+        self.version_dropdown = ct.CTkComboBox(self.addInstance_window, command=change_version, values=self.vanilla_versions, variable=version_var, font=ct.CTkFont(size=15, family="Inter"), width=200, button_color="#565b5e" if actualTheme == "dark" else "#a3a3a3", bg_color="transparent", button_hover_color="#3c3e41" if actualTheme == "dark" else "#868686", fg_color="#343638" if actualTheme == "dark" else "#868686", hover="#3c3e41" if actualTheme == "dark" else "#868686")
         self.version_dropdown.place(x=295, rely=0.55)
         self.version_dropdown.bind("<Return>", lambda event: change_version(version_var.get()))
         CTkScrollableDropdown(self.version_dropdown, values=self.vanilla_versions, justify="left", frame_corner_radius=5, command=change_version)
@@ -2043,7 +2266,7 @@ class Argon(ct.CTk):
                     self.chosen_version_alone = self.vanilla_versions[0].strip("release ")
                 elif self.vanilla_versions[0].startswith("snapshot "):
                     self.chosen_version_alone = self.vanilla_versions[0].strip("snapshot ")
-                self.version_dropdown = ct.CTkComboBox(self.addInstance_window, command=change_version, values=self.vanilla_versions, variable=version_var, font=ct.CTkFont(size=15, family="Inter"), width=200, button_color="#565b5e", bg_color="transparent", button_hover_color="#3c3e41", fg_color="#343638", hover="#3c3e41")
+                self.version_dropdown.configure(values=self.vanilla_versions)
                 self.version_dropdown.place(x=295, rely=0.55)
                 self.version_dropdown.bind("<Return>", lambda event: change_version(version_var.get()))
                 self.install_btn.place(x=515, rely=0.55)
@@ -2052,7 +2275,7 @@ class Argon(ct.CTk):
                 version_var.set(self.forge_versions[0])
                 self.chosen_version = str("Forge " + self.forge_versions[0])
                 self.chosen_version_alone = self.forge_versions[0]
-                self.version_dropdown = ct.CTkComboBox(self.addInstance_window, command=change_version, values=self.forge_versions, variable=version_var, font=ct.CTkFont(size=15, family="Inter"), width=200, button_color="#565b5e", bg_color="transparent", button_hover_color="#3c3e41", fg_color="#343638", hover="#3c3e41")
+                self.version_dropdown.configure(values=self.forge_versions)
                 self.version_dropdown.place(x=295, rely=0.55)
                 self.version_dropdown.bind("<Return>", lambda event: change_version(version_var.get()))
                 self.install_btn.place(x=515, rely=0.55)
@@ -2061,7 +2284,7 @@ class Argon(ct.CTk):
                 version_var.set(self.fabric_versions[0])
                 self.chosen_version = str("Fabric " + self.fabric_versions[0])
                 self.chosen_version_alone = self.fabric_versions[0]
-                self.version_dropdown = ct.CTkComboBox(self.addInstance_window, command=change_version, values=self.fabric_versions, variable=version_var, font=ct.CTkFont(size=15, family="Inter"),width=200, button_color="#565b5e", bg_color="transparent", button_hover_color="#3c3e41", fg_color="#343638", hover="#3c3e41")
+                self.version_dropdown.configure(values=self.fabric_versions)
                 self.version_dropdown.place(x=295, rely=0.55)
                 self.version_dropdown.bind("<Return>", lambda event: change_version(version_var.get()))
                 self.install_btn.place(x=515, rely=0.55)
@@ -2070,12 +2293,12 @@ class Argon(ct.CTk):
                 version_var.set(self.installed_versions[0])
                 self.chosen_version = str("Installed " + self.installed_versions[0])
                 self.chosen_version_alone = self.installed_versions[0]
-                self.version_dropdown = ct.CTkComboBox(self.addInstance_window, command=change_version, values=self.installed_versions, variable=version_var, font=ct.CTkFont(size=15, family="Inter"), width=200, button_color="#565b5e", bg_color="transparent", button_hover_color="#3c3e41", fg_color="#343638", hover="#3c3e41")
+                self.version_dropdown.configure(values=self.installed_versions)
                 self.version_dropdown.place(x=295, rely=0.55)
                 self.version_dropdown.bind("<Return>", lambda event: change_version(version_var.get()))
                 self.install_btn.place_forget()
                 CTkScrollableDropdown(self.version_dropdown, values=self.installed_versions, justify="left", frame_corner_radius=5, command=change_version)
-        self.method_dropdown = ct.CTkOptionMenu(self.addInstance_window,variable=method_var, font=ct.CTkFont(size=15, family="Inter"), values=["Vanilla", "Forge", "Fabric", "Installed"], width=100, button_color="#565b5e", bg_color="transparent", button_hover_color="#3c3e41", fg_color="#343638", hover="#3c3e41", command=method_change)
+        self.method_dropdown = ct.CTkOptionMenu(self.addInstance_window,variable=method_var, font=ct.CTkFont(size=15, family="Inter"), values=["Vanilla", "Forge", "Fabric", "Installed"], width=100, button_color="#565b5e" if actualTheme == "dark" else "#a3a3a3", bg_color="transparent", button_hover_color="#3c3e41" if actualTheme == "dark" else "#868686", fg_color="#343638" if actualTheme == "dark" else "#868686", hover="#3c3e41" if actualTheme == "dark" else "#868686", command=method_change)
         self.method_dropdown.place(x=175, rely=0.55)
         namevar = self.name_entry1.get()
 
@@ -3100,11 +3323,12 @@ class Argon(ct.CTk):
         self.error_window.after(200, lambda: self.error_window.iconbitmap("img/icon.ico"))
         self.error_window.grab_set()
         
-        self.scrollableTextBox = ct.CTkScrollableFrame(self.error_window, corner_radius=10, height=420, width=440, fg_color="#2b2b2b", bg_color="transparent")
-        self.scrollableTextBox.place(x=20, y=20)
+        self.scrollableTextBox = ct.CTkFrame(self.error_window, corner_radius=10, height=440, width=475, fg_color="#2b2b2b", bg_color="transparent")
+        self.scrollableTextBox.place(relx=0.5, rely=0.46, anchor="center")
         
-        self.crash_report_text = ct.CTkLabel(self.scrollableTextBox, text=crash_report, text_color="white", font=ct.CTkFont(size=15, family="Inter"), anchor="nw", wraplength=420, justify="left")
-        self.crash_report_text.pack(padx=10, pady=10, fill="both", expand=True)
+        self.crash_report_text = ct.CTkTextbox(self.scrollableTextBox, text_color="white", font=ct.CTkFont(size=15, family="Inter"), fg_color="#2b2b2b", width=400, height=400, bg_color="transparent", corner_radius=10)
+        self.crash_report_text.insert("0.0",crash_report)
+        self.crash_report_text.place(x=10, y=10)
         def hideFullLog():
             self.crash_report_text.configure(text=crash_report)
             self.showFullLog_btn.configure(text="Show Full Log", command=showFullLog)

@@ -8,8 +8,8 @@ imagehash
 pywinstyles
 psutil
 pywin32
-pywiglet
 winshell
 pypresence
 pyqt6
 PyQt6-WebEngine
+pywebview

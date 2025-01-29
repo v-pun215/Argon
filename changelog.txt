@@ -41,3 +41,19 @@ v1.2
 12. Added the ability to launch minecraft without internet access (offline)!
 13. Quilt support is being considered.
 14. Made minor changes in the installer
+
+v1.3
+1. Made UI changes in the sign in screen (also changed name from welcome.py to signin.py)
+2. Made minor UI changes in the crash report window.
+3. Added a Customization heading in the Argon settings.
+4. You can now customize background of the home page.
+5. Introducing Light mode!
+6. Made many changes in the UI.
+7. Added setting options in settings.json (customBackground, theme)
+8. Now the launcher starts in System Theme.
+
+TO DO:
+1. Crash report tick    
+2. Buttons ?
+3. Customization: Back IMG tick, Blur ?, Ligt mode dark mode
+4. downoad ui change
