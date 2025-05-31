@@ -2,7 +2,7 @@
 
 # Argon Binary Releases
 
-This branch contains **prebuilt binaries** for the Argon Minecraft Launcher — intended for end-users who just want to install and run Argon without building from source.
+This branch contains **prebuilt binaries** for the Argon, intended for use by the installers of Argon.
 
 > ✅ This branch is separate from `main`, which contains the actual source code.
 
