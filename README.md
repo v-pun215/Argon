@@ -6,7 +6,6 @@ This branch contains **prebuilt binaries** for the Argon Minecraft Launcher — 
 
 > ✅ This branch is separate from `main`, which contains the actual source code.
 
----
 
 ## 📦 What's Here?
 
@@ -16,13 +15,13 @@ This branch contains **prebuilt binaries** for the Argon Minecraft Launcher — 
 - `Release builds of Argon` - These are downloaded and installed by Argon's installers.
 - Other platform-specific builds (coming soon)
 
----
+
 
 ## 💡 How to Use
 
 These binaries are not meant to be downloaded or used from here. Go to the [releases](https://github.com/v-pun215/Argon/releases) to download the latest installer for your operating system.
 
----
+
 
 ## 🛠️ Requirements
 
@@ -32,7 +31,7 @@ Argon requires Python 3.10+ and Java 21. Please make sure your computer has thes
 
 Make sure these are on your system's PATH if installing manually.
 
----
+
 
 ## 📁 Source Code
 
@@ -40,7 +39,7 @@ The source code lives in the [`main` branch](https://github.com/v-pun215/Argon/t
 
 To contribute or build from source, clone that branch instead.
 
----
+
 
 ## ✨ Support & Feedback
 
@@ -48,7 +47,6 @@ If something breaks, or you're having trouble running Argon, open an issue on th
 
 If you like the project, consider starring it!
 
----
 
 ## ⛔ Disclaimer
 
