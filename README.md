@@ -6,6 +6,8 @@ This branch contains **prebuilt binaries** for the Argon Minecraft Launcher — 
 
 > ✅ This branch is separate from `main`, which contains the actual source code.
 
+> This branch is deployed for easy downloading at https://argon-release.vercel.app.
+
 
 ## 📦 What's Here?
 
