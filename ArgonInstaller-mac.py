@@ -32,6 +32,14 @@ except ImportError as e:
 
 argonFont = ""
 
+# download assets
+if not os.path.exists("img"):
+    os.makedirs("img")
+wget.download(url="https://argon-release.vercel.app/img/hello.png", out="img/hello.png")
+wget.download(url="https://argon-release.vercel.app/img/mac.png", out="img/mac.png")
+wget.download(url="https://argon-release.vercel.app/img/mac.icns", out="img/mac.icns")
+# download LICENSE file
+wget.download(url="https://argon-release.vercel.app/LICENSE", out="LICENSE")
 # EXE
 def resource_path(relative_path):
     try:
@@ -198,6 +206,9 @@ class ArgonInstaller(ct.CTk):
         self.title1.place(relx=0.5, rely=0.2, anchor="center")
 
         def exitee():
+            import shutil
+            shutil.rmtree("img/")
+            os.remove("LICENSE")
             self.destroy()
         self.description = ct.CTkLabel(self.page5, text="Argon Installer has finished installing Argon to your computer.", font=(argonFont, 15))
         self.description.place(relx=0.5, rely=0.3, anchor="center")
