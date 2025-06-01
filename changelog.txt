@@ -52,8 +52,11 @@ v1.3
 7. Added setting options in settings.json (customBackground, theme)
 8. Now the launcher starts in System Theme.
 
-TO DO:
-1. Crash report tick    
-2. Buttons ?
-3. Customization: Back IMG tick, Blur ?, Ligt mode dark mode
-4. downoad ui change
+v1.4
+1. Added macOS and Linux support. However, some minor features are not supported on macOS and Linux.
+2. Improved Python compatibility (3.10 - 3.13)
+3. Fixed many bugs lingering in the codebase.
+4. Fixed bugs with Fabric instances.
+5. Finally added an authentication server that hides Azure secrets.
+6. Fixed bug in Discord Presence system to make it functional again.
+7. Argon can be installed using a .sh script on macOS.

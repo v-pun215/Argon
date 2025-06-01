@@ -1,4 +1,24 @@
 # This file is meant to be packaged using Pyinstaller, hence all the nuances.
+
+'''
+The installer does these things:
+1. lets user choose install location
+2. checks if Python is installed, if not, installs it
+3. checks if Inter font is installed, if not, installs it
+4. checks if Java is installed, if not, installs it
+5. downloads the latest release of Argon from a private repository
+6. extracts the release zip to the install location
+7. installs the dependencies from requirements.txt
+8. creates a desktop shortcut to the main.py file
+
+'''
+
+import os
+import subprocess
+import wget
+import sys
+import ctypes
+import subprocess
 import customtkinter as ct
 import ctypes, PIL
 import wget
@@ -31,7 +51,7 @@ def resource_path(relative_path):
     return os.path.join(base_path, relative_path)    
 
 
-version = "v1.3"
+version = "v1.4"
 
 
 
@@ -41,10 +61,14 @@ svmem = psutil.virtual_memory()
 currn_dir = os.getcwd()
 java_home = os.getenv("JAVA_HOME")+r"\\bin\\java.exe"
 java_home = java_home.replace("\\", "/")
+global isJava
+isJava = True
 try: 
     java_loc = os.getenv('JAVA_HOME').replace("\\", "/")+str(r"\\bin\\java.exe")
 except:
+
     print("Java is not installed, or it is not installed to the PATH (system environment variable). Please (re)install Java and try again.")
+    isJava = False
 def get_size(bytes, suffix="B"):
     """ 
     Scale bytes to its proper format
@@ -66,11 +90,18 @@ class ArgonInstaller(ct.CTk):
     def __init__(self):
         super().__init__()
         self.geometry("700x400")
-        self.wm_iconbitmap(resource_path("img/icon.ico"))
+        self.wm_iconbitmap(resource_path("img\\icon.ico"))
         #self.protocol("WM_DELETE_WINDOW", self.ays)
         self.resizable(False, False)
         self.title(f"Argon {version} Installer")
         'Page 1'
+        if not isJava:
+            response = CTkMessagebox(title="Error", message="Java is not installed, or it is not installed to the PATH (system environment variable). Would you like to download, install and Java to your PATH?", icon="cancel", option_2="Exit", option_1="Install Java Automatically")
+            if response.get() == "Install Java Automatically":
+                self.javaInstall()
+            else:
+                self.destroy()
+                sys.exit(0)
         self.page1 = ct.CTkFrame(self, corner_radius=0, fg_color="transparent", bg_color="transparent")
         self.page1.place(relwidth=1, relheight=1)
         self.logo = ct.CTkImage(dark_image=PIL.Image.open(resource_path("img/hello.png")), light_image=PIL.Image.open(resource_path("img/hello.png")), size=(120, 120))
@@ -192,7 +223,49 @@ class ArgonInstaller(ct.CTk):
         self.author_label = ct.CTkLabel(self.page5, text="Made by v-pun215.", font=("Inter", 15), text_color="#b3b3b3")
         self.author_label.place(relx=0.89, rely=0.955, anchor="center")
 
+    def is_admin():
+        try:
+            return ctypes.windll.shell32.IsUserAnAdmin()
+        except:
+            return False
+    def javaInstall(self):
+        if not self.is_admin():
+            # Re-run the script with admin rights
+            print("Requesting admin privileges...")
+            script = sys.executable
+            params = ' '.join([f'"{arg}"' for arg in sys.argv])
+            ctypes.windll.shell32.ShellExecuteW(None, "runas", script, params, None, 1)
+            sys.exit()
 
+        print("Running as admin.")
+        # Configuration
+
+        msi_url = "https://download.bell-sw.com/java/21.0.7+9/bellsoft-jdk21.0.7+9-windows-amd64.msi"
+        msi_file = "bellsoft-jdk21.msi"
+        install_dir = "C:\\Java\\BellSoft\\jdk-21"
+
+        # Step 1: Download the MSI installer
+        print("Downloading BellSoft JDK 21...")
+        wget.download(msi_url, msi_file)
+        print("\nDownload complete.")
+
+        msi_file = "bellsoft-jdk21.msi"
+        install_dir = "C:\\Java\\BellSoft\\jdk-21"
+        # Step 2: Install silently using msiexec
+        print("Installing Java 21 silently...")
+        install_cmd = [
+            "msiexec", "/i", msi_file,
+            "/qn",  # quiet mode: no UI
+            f"INSTALLDIR={install_dir}"
+        ]
+        subprocess.run(install_cmd, check=True)
+
+        # Optional: delete the MSI installer
+        os.remove(msi_file)
+
+        print(f"Java 21 installed successfully in {install_dir}")
+        CTkMessagebox(title="Success", message="Java 21 has been installed successfully.", icon="check")
+        self.next_page(1)
 
 
 
@@ -291,15 +364,15 @@ class ArgonInstaller(ct.CTk):
         os.chdir(install_dir)
         # Python
         if not self.check_python_installed():
-            self.status_label.configure(text="Downloading Python 3.11.9")
-            wget.download(url="https://www.python.org/ftp/python/3.11.9/python-3.11.9-amd64.exe")
-            os.system("python-3.11.9-amd64.exe")
-            os.remove("python-3.11.9-amd64.exe")
+            self.status_label.configure(text="Downloading Python 3.13.2")
+            wget.download(url="https://www.python.org/ftp/python/3.13.2/python-3.13.2-amd64.exe")
+            os.system("python-3.13.2-amd64.exe")
+            os.remove("python-3.13.2-amd64.exe")
 
 
         # Download release from private repository of releases (zips)
         self.status_label.configure(text="Downloading Argon...")
-        wget.download(url=f"https://argon-release.vercel.app/Argon-{version}.zip")
+        wget.download(url=f"https://argon-release.vercel.app/zips/Argon-{version}.zip")
         
         self.status_label.configure(text="Extracting Argon zip")
         # Extract it
@@ -317,23 +390,9 @@ class ArgonInstaller(ct.CTk):
             self.status_label.configure(text="Downloading and installing fonts")
             os.mkdir("fonts")
             os.chdir("fonts")
-            wget.download("https://argon-release.vercel.app/ArgonInstaller.exe") # Downloads FontReg (renamed ArgonInstaller because why not)
-            wget.download("https://argon-release.vercel.app/Inter.ttc") # Downloads Inter font (ttc)
+            wget.download("https://argon-release.vercel.app/windows/ArgonInstaller.exe") # Downloads FontReg (renamed ArgonInstaller because why not)
+            wget.download("https://argon-release.vercel.app/fonts/Inter.ttc") # Downloads Inter font (ttc)
             os.system("ArgonInstaller /copy")
-
-        # Install Java
-        os.chdir(install_dir)
-        java_home = os.getenv("JAVA_HOME")+r"\\bin\\java.exe"
-        java_home = java_home.replace("\\", "/")
-        try: 
-            java_loc = os.getenv('JAVA_HOME').replace("\\", "/")+str(r"\\bin\\java.exe")
-        except:
-            self.status_label.configure(text="Java not installed on PATH, downloading")
-            # Installs Java
-            wget.download("https://download.bell-sw.com/java/21.0.5+11/bellsoft-jdk21.0.5+11-windows-amd64.msi")
-            self.status_label.configure(text="Installing Java 21")
-            os.system("msiexec /i 'bellsoft-jdk21.0.5+11-windows-amd64.msi' /quite /promptrestart")
-            os.remove("https://download.bell-sw.com/java/21.0.5+11/bellsoft-jdk21.0.5+11-windows-amd64.msi")
 
 
         # Create Desktop Shortcut
@@ -365,4 +424,3 @@ class ArgonInstaller(ct.CTk):
 
 app = ArgonInstaller()
 app.mainloop()
-

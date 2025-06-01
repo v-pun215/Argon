@@ -18,6 +18,6 @@ for line in urllib.request.urlopen(file_url):
         break
 
 client = line1
-secret = line2
 discordClient = line3
 redirectURL = "https://eclient-done.vercel.app/"
+

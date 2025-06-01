@@ -1,19 +1,24 @@
-import tkinter
-import tkinter.messagebox
+# Argon, v-pun215
+# Please star this repository if you like it! :D
+import os
+import platform
+os_name = platform.system()
+from tkinter import PhotoImage
 import customtkinter as ct
 from PIL import Image, ImageTk
-from ctypes import windll, byref, sizeof, c_int
+if not os_name == "Linux" and not os_name == "Darwin":
+    from ctypes import windll, byref, sizeof, c_int
 import ctypes
 import random
 import urllib.request
 import json, datetime
 import threading
 import time
-import io
+import io, os
 import re as regex
-import pywinstyles
+if not os_name == "Linux" and not os_name == "Darwin":
+    import pywinstyles
 import psutil
-import os
 import getpass
 import requests
 import subprocess
@@ -22,7 +27,7 @@ import minecraft_launcher_lib as mc
 from minecraft_launcher_lib.forge import install_forge_version, run_forge_installer, supports_automatic_install
 from minecraft_launcher_lib.fabric import install_fabric, get_all_minecraft_versions, get_stable_minecraft_versions, get_latest_loader_version
 import uuid
-import CTkMessagebox as msg
+import CTkMessagebox as msg # type: ignore (My VSCode is cooked fr)
 import wget
 from elySkinRenderer import render_skin, render_iso_skin
 from mcNewsParser import get_json_file
@@ -41,12 +46,35 @@ from pypresence import Presence
 import shutil
 
 
+if os_name == "Windows":
+    if not os.path.exists(r"{}/settings.json".format(currn_dir)):
+        subprocess.Popen(["python", "signin.py"])
+        sys.exit()
+    else:
+        pass
+elif os_name == "Linux" or os_name == "Darwin":
+    if not os.path.exists(r"settings.json"):
+        print("settings.json not found, creating one...")
+        subprocess.Popen(["python3", "signin.py"])
+        sys.exit()
+    
+    # Check if the settings.json file has useless data
+    with open("settings.json", "r") as js_read:
+        s = js_read.read()
+        s = s.replace('\t','')  #Trailing commas in dict cause file read problems, these lines will fix it.
+        s = s.replace('\n','')
+        s = s.replace(',}','}')
+        s = s.replace(',]',']')
+        settings_data = json.loads(s)
 
-if not os.path.exists(r"{}/settings.json".format(currn_dir)):
-    subprocess.Popen(["python", "signin.py"])
-    sys.exit()
-else:
-    pass
+
+    if settings_data["User-info"][0]["username"] == None:
+        print("settings.json is empty, creating a new one...")
+        os.remove("settings.json")
+        os.remove("launcherProfiles.json")
+        subprocess.Popen(["python3", "signin.py"])
+        sys.exit()
+
 # Dear code viewer, how was your day? :D
 import playTime
 def check_internet(url='https://www.google.com', timeout=5):
@@ -70,16 +98,39 @@ starttime = time.time()
 
 '''Argon Metadata'''
 author = "v-pun215"
-version = "1.3"
+version = "1.4"
 description = "A feature-rich minecraft launcher built in Python."
 ''''''
+
+if platform.system() == 'Darwin':
+    from Foundation import NSBundle
+    bundle = NSBundle.mainBundle()
+    if bundle:
+        info = bundle.localizedInfoDictionary() or bundle.infoDictionary()
+        if info and info['CFBundleName'] == 'Python':
+            info['CFBundleName'] = "Argon"
+            info['CFBundleVersion'] = version
+            info['CFBundleShortVersionString'] = version
+            info['CFBundleIdentifier'] = f'com.vpun215.argon'
+            info['CFBundleExecutable'] = 'Argon'
+            info['CFBundleIconFile'] = 'img/macicon.icns'
+            info['CFBundleGetInfoString'] = 'Argon v{version}, © 2025 v-pun215'
+            info['CFBundleLongVersionString'] = 'Argon v{version}, © 2025 v-pun215'
+            info['NSHumanReadableCopyright'] = '© 2025 v-pun215'
+
+'''Font'''
+argonFont = "Inter"
+
+if os_name == "Darwin":
+    argonFont = ""
+
 
 '''Some api keys. YOU ARE NOT allowed to use them.'''
 if connected == True:
     import keys
     mcNewsHeaders = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36'}
-    cl = keys.client
-    se = keys.secret
+
+
     re = "https://eclient-done.vercel.app/"
     discordClient = keys.discordClient
 else:
@@ -101,8 +152,9 @@ svmem = psutil.virtual_memory()
 
 ct.set_default_color_theme("blue")  # Themes: "blue" (standard), "green", "dark-blue"
 myappid = u'vpun215.argon.release.2.0' # arbitrary string
-ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
-print('''
+if not os_name == "Linux" and not os_name == "Darwin":
+    ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
+print(r'''
  $$$$$$\                                          
 $$  __$$\                                         
 $$ /  $$ | $$$$$$\   $$$$$$\   $$$$$$\  $$$$$$$\  
@@ -124,12 +176,12 @@ with open("settings.json", "r") as js_read:
     s = js_read.read()
     s = s.replace('\t','')  #Trailing commas in dict cause file read problems, these lines will fix it.
     s = s.replace('\n','')  #Found this on stackoverflow.
-    s = s.replace(',}','}')
+    s = s.replace(',}','}') #shasankp000 the goat!
     s = s.replace(',]',']')
     data = json.loads(s)
     #print(json.dumps(data, indent=4,))
 
-os_name = data["PC-info"][0]["OS"]
+full_os_name = data["PC-info"][0]["OS"]
 mc_home = data["Minecraft-home"]
 username = data["User-info"][0]["username"]
 cracked_password = data["User-info"][0]["cracked_password"]
@@ -148,7 +200,6 @@ verbose = data["settings"][0]["verbose"]
 refresh_token = data["Microsoft-settings"][0]["refresh_token"]
 customBackground = data["settings"][0]["customBackground"]
 theme = data["settings"][0]["theme"]
-
 def detect_darkmode_in_windows(): 
     try:
         import winreg
@@ -169,20 +220,30 @@ def detect_darkmode_in_windows():
         except OSError:
             break
     return False
+actualTheme = None
 if theme == "System":
-    if detect_darkmode_in_windows() == True:
-        actualTheme = "dark"
-    else:
-        actualTheme = "light"
+    if os_name == "Windows":
+        if detect_darkmode_in_windows() == True:
+            actualTheme = "dark"
+        else:
+            actualTheme = "light"
+    elif os_name == "Linux":
+        actualTheme = "dark" # Argon is written to support Dark Mode FIRST and then Light Mode, hence it is default if system theme is undetectable.
+    elif os_name == "Darwin":
+        import darkdetect
+        if darkdetect.isDark():
+            actualTheme = "dark"
+        else:
+            actualTheme = "light"
+    print(actualTheme)
 else:
     actualTheme = theme.lower()
-ct.set_appearance_mode(theme)
-
+ct.set_appearance_mode(actualTheme)
 def reload_data():
     global mc_home
     global username
     global uid
-    global os_name
+    global full_os_name
     global mc_dir
     global selected_ver
     global ramlimiterExceptionBypassed
@@ -204,7 +265,7 @@ def reload_data():
         data = json.loads(s)
         #print(json.dumps(data, indent=4,))
 
-    os_name = data["PC-info"][0]["OS"]
+    full_os_name = data["PC-info"][0]["OS"]
     mc_home = data["Minecraft-home"]
     username = data["User-info"][0]["username"]
     cracked_password = data["User-info"][0]["cracked_password"]
@@ -225,15 +286,22 @@ def reload_data():
     theme = data["settings"][0]["theme"]
 
 
+if os_name == "Windows":
+    if os.path.exists(r"C:/Users/{}/AppData/Roaming/.minecraft".format(usr_accnt)):
+        print("Existing minecraft installation, checking for versions...")
 
-if os.path.exists(r"C:/Users/{}/AppData/Roaming/.minecraft".format(usr_accnt)):
-    print("Existing minecraft installation, checking for versions...")
+    else:
+        os.mkdir(r"C:/Users/{}/AppData/Roaming/.minecraft".format(usr_accnt))
+        os.chdir(r"C:/Users/{}/AppData/Roaming/.minecraft".format(usr_accnt))
+        os.mkdir("versions")
+elif os_name == "Linux":
+    if os.path.exists(r"/home/{}/.minecraft".format(usr_accnt)):
+        print("Existing minecraft installation, checking for versions...")
 
-else:
-     os.mkdir(r"C:/Users/{}/AppData/Roaming/.minecraft".format(usr_accnt))
-     os.chdir(r"C:/Users/{}/AppData/Roaming/.minecraft".format(usr_accnt))
-     os.mkdir("versions")
-
+    else:
+        os.mkdir(r"/home/{}/.minecraft".format(usr_accnt))
+        os.chdir(r"/home/{}/.minecraft".format(usr_accnt))
+        os.mkdir("versions")
 
 
 class Argon(ct.CTk):
@@ -246,7 +314,7 @@ class Argon(ct.CTk):
         global mc_home
         global username
         global uid
-        global os_name
+        global full_os_name
         global mc_dir
         global selected_ver
         global ramlimiterExceptionBypassed
@@ -260,7 +328,15 @@ class Argon(ct.CTk):
         global cracked_password
         self.title("Argon")
         self.geometry(f"{1024}x{600}")
-        self.wm_iconbitmap("img/icon.ico")
+        if os_name == "Windows":
+            var_name = currn_dir.replace("\\", "/") + "/"
+            self.wm_iconbitmap(f"{var_name}img/icon.ico")
+        elif os_name == "Linux":
+            icon = PhotoImage(file="img/logo.png")
+            self.iconphoto(False, icon)
+        elif os_name == "Darwin":
+            icon = PhotoImage(file="img/mac.png")
+            self.iconphoto(False, icon)
         self.resizable(False, False)
 
         self.grid_columnconfigure(1, weight=1)
@@ -281,33 +357,20 @@ class Argon(ct.CTk):
 
         ''' Connect to Discord RPC '''
         global RPC
+        global discordConnected
         if connected == True:
             try:
-                RPC = Presence(discordClient) 
+                RPC = Presence("1331607427547660340") 
                 RPC.connect()
-            except:
+                discordConnected = True
+            except Exception as e:
+                print(e)
                 print("Discord not found running, not connecting to RPC.")
-                class Presence:
-                    def __init__(self):
-                        pass
-                    def connect(self, **kwargs):
-                        pass
-                    def update(self, **kwargs):
-                        pass
-                RPC = Presence()
-        else:
-            class Presence:
-                def __init__(self):
-                    pass
-                def connect(self, **kwargs):
-                    pass
-                def update(self, **kwargs):
-                    pass
-            RPC = Presence()
+                discordConnected = False
+        
 
-
-
-        RPC.update(state="In the launcher", large_image="large", small_image="small", large_text="launcher")
+        if discordConnected == True:
+            RPC.update(state="In the launcher", large_image="large", small_image="small", large_text="launcher")
 
         # Variables
         chosen_inst = selected_ver
@@ -345,6 +408,7 @@ class Argon(ct.CTk):
                 if value is var:
                     return name
             return None
+        # When I wrote this code, only me and God understood it. Now, only god knows.
         self.pinned1 = get_pinned_inst(data["pinned-instances"][0]["pinned1"])
         self.pinned2 = get_pinned_inst(data["pinned-instances"][0]["pinned2"])
         self.pinned3 = get_pinned_inst(data["pinned-instances"][0]["pinned3"])
@@ -375,7 +439,8 @@ class Argon(ct.CTk):
         self.pinned9_img = get_icon(data["pinned-icons"][0]["pinned9"])
         self.username_head_img = None
 
-        '''Heres when all the loading time is being taken away. And I'm gonna fix that! (with a loading screen)'''
+        '''Initializing phase'''
+        self.withdraw()
         def get_latest_forge_versions():
             import xml.etree.ElementTree as ET
             """
@@ -431,7 +496,10 @@ class Argon(ct.CTk):
         if auth_type == "Microsoft":
             if connected == True:
                 try:
-                    account_informaton = mc.microsoft_account.complete_refresh(cl, se, re, refresh_token)
+                    response = requests.post("https://argon-auth.vpun215.hackclub.app/complete_refresh", json={
+                        "refresh_token": refresh_token,
+                    })
+                    account_informaton = response.json()
                     global msaoptions
                     msaoptions = {
                         "username": account_informaton["name"],
@@ -465,7 +533,7 @@ class Argon(ct.CTk):
                 except mc.exceptions.InvalidRefreshToken:
                     if connected == True:
                         msg.CTkMessagebox(title="Microsoft Account", message="Unable to refresh Microsoft Account. Please login again.", icon="warning")
-                        #self.mc_login()
+                        subprocess.Popen(["python", "signin.py"])
                     else:
                         msg.CTkMessagebox(title="Error", message=" Your Microsoft Account is unreachable due to no internet access. You will be able to play only using offline mode.", icon="cancel")
                         auth_type = "Offline"
@@ -512,7 +580,6 @@ class Argon(ct.CTk):
         
         elif auth_type == "Offline":
             print("[OFFLINE] Logged in as: ", username)
-        
         if connected == True:
             print("Loading instances...")
             self.addInstance()
@@ -528,6 +595,7 @@ class Argon(ct.CTk):
             self.username_head_img = Image.open("img/user/steve.png")
 
         '''End of loading stuff'''
+        
 
             
 
@@ -539,21 +607,29 @@ class Argon(ct.CTk):
         self.skin_head = ct.CTkImage(light_image=self.username_head_img, dark_image=self.username_head_img, size=skin_size)
         self.skin_head_label = ct.CTkLabel(self.sidebar_frame,text="",image=self.skin_head, bg_color="transparent")
         self.skin_head_label.place(x=10 if auth_type=="Offline" else 10, y=10)
-        self.login_label = ct.CTkLabel(self.sidebar_frame, text="Logged in as", font=ct.CTkFont(size=16, family="Inter"), anchor="w", text_color="#b3b3b3" if actualTheme == "dark" else "#585858")
+        self.login_label = ct.CTkLabel(self.sidebar_frame, text="Logged in as", font=ct.CTkFont(size=16, family=argonFont), anchor="w", text_color="#b3b3b3" if actualTheme == "dark" else "#585858")
         self.login_label.place(x=75, y=8)
-        self.username_label = ct.CTkLabel(self.sidebar_frame, text=username, font=ct.CTkFont(size=20, weight="bold", family="Inter"), anchor="w", bg_color="transparent", fg_color="transparent")
+        
+        ''' Make username label smaller if it is too long '''
+        if len(username) > 9:
+            usernameFontSize = 14
+        else:
+            usernameFontSize = 20
+
+        self.username_label = ct.CTkLabel(self.sidebar_frame, text=username, font=ct.CTkFont(size=usernameFontSize, weight="bold", family=argonFont), anchor="w", bg_color="transparent", fg_color="transparent")
         self.username_label.place(x=75, y=31)
+
         self.home_img = ct.CTkImage(light_image=Image.open("img/home.png"), dark_image=Image.open("img/home.png"), size=(23, 17))
         self.inst_img = ct.CTkImage(light_image=Image.open("img/inst.png"), dark_image=Image.open("img/inst.png"), size=(23,17))
         self.set_img = ct.CTkImage(light_image=Image.open("img/settings.png"), dark_image=Image.open("img/settings.png"), size=(23,17))
         self.acc_img = ct.CTkImage(light_image=Image.open("img/account.png"), dark_image=Image.open("img/account.png"), size=(23,17))
-        self.home = ct.CTkButton(self.sidebar_frame,text="Home", font=ct.CTkFont(size=15, family="Inter"), command=self.go_to_home, height=30, width=200, corner_radius=0, anchor="w", image=self.home_img, compound="left")
+        self.home = ct.CTkButton(self.sidebar_frame,text="Home", font=ct.CTkFont(size=15, family=argonFont), command=self.go_to_home, height=30, width=200, corner_radius=0, anchor="w", image=self.home_img, compound="left")
         self.home.place(x=0, y=75)
-        self.inst = ct.CTkButton(self.sidebar_frame,text="Instances", font=ct.CTkFont(size=15, family="Inter"), command=self.go_to_inst, height=30, corner_radius=0, width=200, anchor="w", image=self.inst_img, compound="left")
+        self.inst = ct.CTkButton(self.sidebar_frame,text="Instances", font=ct.CTkFont(size=15, family=argonFont), command=self.go_to_inst, height=30, corner_radius=0, width=200, anchor="w", image=self.inst_img, compound="left")
         self.inst.place(x=0, y=106)
-        self.settings = ct.CTkButton(self.sidebar_frame,text="Settings", font=ct.CTkFont(size=15, family="Inter"), command=self.go_to_set, height=30, width=200, corner_radius=0, anchor="w", image=self.set_img, compound="left")
+        self.settings = ct.CTkButton(self.sidebar_frame,text="Settings", font=ct.CTkFont(size=15, family=argonFont), command=self.go_to_set, height=30, width=200, corner_radius=0, anchor="w", image=self.set_img, compound="left")
         self.settings.place(x=0, y=137)
-        self.account = ct.CTkButton(self.sidebar_frame,text="Account", font=ct.CTkFont(size=15, family="Inter"), command=self.go_to_acc, height=30, width=200, corner_radius=0, anchor="w", image=self.acc_img, compound="left")
+        self.account = ct.CTkButton(self.sidebar_frame,text="Account", font=ct.CTkFont(size=15, family=argonFont), command=self.go_to_acc, height=30, width=200, corner_radius=0, anchor="w", image=self.acc_img, compound="left")
         self.account.place(x=0, y=168)
         for i in range(1, 10):
             if getattr(self, f"pinned{i}") != "":
@@ -569,14 +645,14 @@ class Argon(ct.CTk):
         latestSnapshot = f"vanilla snapshot {ltvers['snapshot']}"
         self.pinned_inst = {}
         
-        self.pinned_inst1 = ct.CTkButton(self.sidebar_frame,text_color="white" if actualTheme == "dark" else "black",text="Latest Release",image=self.release_img, font=ct.CTkFont(size=15, family="Inter"), command=lambda: self.choose_inst("Latest Release", latestRelease), height=30, width=200, corner_radius=0, anchor="w", fg_color="transparent", bg_color="#262626" if actualTheme == "dark" else "#cacaca", hover_color="#1a1a1a" if actualTheme == "dark" else "#b8b8b8", compound="left")
+        self.pinned_inst1 = ct.CTkButton(self.sidebar_frame,text_color="white" if actualTheme == "dark" else "black",text="Latest Release",image=self.release_img, font=ct.CTkFont(size=15, family=argonFont), command=lambda: self.choose_inst("Latest Release", latestRelease), height=30, width=200, corner_radius=0, anchor="w", fg_color="transparent", bg_color="#262626" if actualTheme == "dark" else "#cacaca", hover_color="#1a1a1a" if actualTheme == "dark" else "#b8b8b8", compound="left")
         self.pinned_inst1.place(x=0, y=210)
-        self.pinned_inst2 = ct.CTkButton(self.sidebar_frame,text_color="white" if actualTheme == "dark" else "black",text="Latest Snapshot",image=self.snapshot_img, font=ct.CTkFont(size=15, family="Inter"), command=lambda: self.choose_inst("Latest Snapshot", latestSnapshot), height=30, width=200, corner_radius=0, anchor="w", fg_color="transparent", bg_color="transparent", hover_color="#1a1a1a" if actualTheme == "dark" else "#b8b8b8", compound="left")
+        self.pinned_inst2 = ct.CTkButton(self.sidebar_frame,text_color="white" if actualTheme == "dark" else "black",text="Latest Snapshot",image=self.snapshot_img, font=ct.CTkFont(size=15, family=argonFont), command=lambda: self.choose_inst("Latest Snapshot", latestSnapshot), height=30, width=200, corner_radius=0, anchor="w", fg_color="transparent", bg_color="transparent", hover_color="#1a1a1a" if actualTheme == "dark" else "#b8b8b8", compound="left")
         self.pinned_inst2.place(x=0, y=240)
         '''for i in range(3, 12):
             pinned_text = getattr(self, f"pinned{i-2}")
             pinned_img = getattr(self, f"pinned{i-2}_img")
-            self.pinned_inst[i] = ct.CTkButton(self.sidebar_frame, text=pinned_text, image=pinned_img, font=ct.CTkFont(size=15, family="Inter"), command=self.sidebar_button_event, height=30, width=200, corner_radius=0, anchor="w", state=self.state_pinned[f"state_pinned{i-2}"])
+            self.pinned_inst[i] = ct.CTkButton(self.sidebar_frame, text=pinned_text, image=pinned_img, font=ct.CTkFont(size=15, family=argonFont), command=self.sidebar_button_event, height=30, width=200, corner_radius=0, anchor="w", state=self.state_pinned[f"state_pinned{i-2}"])
             self.pinned_inst[i].place(x=0, y=210 + (i - 1) * 30)
             if i % 2 != 0:  # Odd number
                 self.pinned_inst[i].configure(bg_color="#262626", hover_color="#1a1a1a")
@@ -594,31 +670,31 @@ class Argon(ct.CTk):
                 themeText = "black"
                 fg_color = "#cacaca" if i % 2 != 0 else "transparent"
                 hover_color = "#b8b8b8"
-            self.pinned_inst[f"pinned{i}"] = ct.CTkButton(self.sidebar_frame,text_color=themeText , text=pinned_text, image=pinned_img, font=ct.CTkFont(size=15, family="Inter"), command=lambda pinned_text=pinned_text: self.select_pinned_instance(pinned_text), height=30, width=200, corner_radius=0, anchor="w", state=self.state_pinned[f"state_pinned{i}"], fg_color=fg_color, hover_color=hover_color)
+            self.pinned_inst[f"pinned{i}"] = ct.CTkButton(self.sidebar_frame,text_color=themeText , text=pinned_text, image=pinned_img, font=ct.CTkFont(size=15, family=argonFont), command=lambda pinned_text=pinned_text: self.select_pinned_instance(pinned_text), height=30, width=200, corner_radius=0, anchor="w", state=self.state_pinned[f"state_pinned{i}"], fg_color=fg_color, hover_color=hover_color)
             self.pinned_inst[f"pinned{i}"].place(x=0, y=210 + (i + 1) * 30)
 
         '''
-        self.pinned_inst3 = ct.CTkButton(self.sidebar_frame,text=self.pinned1,image=self.pinned1_img, font=ct.CTkFont(size=15, family="Inter"), command=self.sidebar_button_event, height=30, width=200, corner_radius=0, anchor="w",text_color="white", fg_color="transparent", bg_color="#262626", hover_color="#1a1a1a", compound="left", state=self.state_pinned["state_pinned1"])
+        self.pinned_inst3 = ct.CTkButton(self.sidebar_frame,text=self.pinned1,image=self.pinned1_img, font=ct.CTkFont(size=15, family=argonFont), command=self.sidebar_button_event, height=30, width=200, corner_radius=0, anchor="w",text_color="white", fg_color="transparent", bg_color="#262626", hover_color="#1a1a1a", compound="left", state=self.state_pinned["state_pinned1"])
         self.pinned_inst3.place(x=0, y=270)
-        self.pinned_inst4 = ct.CTkButton(self.sidebar_frame,text=self.pinned2,image=self.pinned2_img, font=ct.CTkFont(size=15, family="Inter"), command=self.sidebar_button_event, height=30, width=200, corner_radius=0, anchor="w",text_color="white", fg_color="transparent", bg_color="transparent", hover_color="#1a1a1a", compound="left", state=self.state_pinned["state_pinned2"])
+        self.pinned_inst4 = ct.CTkButton(self.sidebar_frame,text=self.pinned2,image=self.pinned2_img, font=ct.CTkFont(size=15, family=argonFont), command=self.sidebar_button_event, height=30, width=200, corner_radius=0, anchor="w",text_color="white", fg_color="transparent", bg_color="transparent", hover_color="#1a1a1a", compound="left", state=self.state_pinned["state_pinned2"])
         self.pinned_inst4.place(x=0, y=300)
-        self.pinned_inst5 = ct.CTkButton(self.sidebar_frame,text=self.pinned3,image=self.pinned3_img, font=ct.CTkFont(size=15, family="Inter"), command=self.sidebar_button_event, height=30, width=200, corner_radius=0, anchor="w",text_color="white", fg_color="transparent", bg_color="#262626", hover_color="#1a1a1a", compound="left", state=self.state_pinned["state_pinned3"])
+        self.pinned_inst5 = ct.CTkButton(self.sidebar_frame,text=self.pinned3,image=self.pinned3_img, font=ct.CTkFont(size=15, family=argonFont), command=self.sidebar_button_event, height=30, width=200, corner_radius=0, anchor="w",text_color="white", fg_color="transparent", bg_color="#262626", hover_color="#1a1a1a", compound="left", state=self.state_pinned["state_pinned3"])
         self.pinned_inst5.place(x=0, y=330)
-        self.pinned_inst6 = ct.CTkButton(self.sidebar_frame,text=self.pinned4,image=self.pinned4_img, font=ct.CTkFont(size=15, family="Inter"), command=self.sidebar_button_event, height=30, width=200, corner_radius=0, anchor="w",text_color="white", fg_color="transparent", bg_color="transparent", hover_color="#1a1a1a", compound="left", state=self.state_pinned["state_pinned4"])
+        self.pinned_inst6 = ct.CTkButton(self.sidebar_frame,text=self.pinned4,image=self.pinned4_img, font=ct.CTkFont(size=15, family=argonFont), command=self.sidebar_button_event, height=30, width=200, corner_radius=0, anchor="w",text_color="white", fg_color="transparent", bg_color="transparent", hover_color="#1a1a1a", compound="left", state=self.state_pinned["state_pinned4"])
         self.pinned_inst6.place(x=0, y=360)
-        self.pinned_inst7 = ct.CTkButton(self.sidebar_frame,text=self.pinned5,image=self.pinned5_img, font=ct.CTkFont(size=15, family="Inter"), command=self.sidebar_button_event, height=30, width=200, corner_radius=0, anchor="w",text_color="white", fg_color="transparent", bg_color="#262626", hover_color="#1a1a1a", compound="left", state=self.state_pinned["state_pinned5"])
+        self.pinned_inst7 = ct.CTkButton(self.sidebar_frame,text=self.pinned5,image=self.pinned5_img, font=ct.CTkFont(size=15, family=argonFont), command=self.sidebar_button_event, height=30, width=200, corner_radius=0, anchor="w",text_color="white", fg_color="transparent", bg_color="#262626", hover_color="#1a1a1a", compound="left", state=self.state_pinned["state_pinned5"])
         self.pinned_inst7.place(x=0, y=390)
-        self.pinned_inst8 = ct.CTkButton(self.sidebar_frame,text=self.pinned6,image=self.pinned6_img, font=ct.CTkFont(size=15, family="Inter"), command=self.sidebar_button_event, height=30, width=200, corner_radius=0, anchor="w",text_color="white", fg_color="transparent", bg_color="transparent", hover_color="#1a1a1a", compound="left", state=self.state_pinned["state_pinned6"])
+        self.pinned_inst8 = ct.CTkButton(self.sidebar_frame,text=self.pinned6,image=self.pinned6_img, font=ct.CTkFont(size=15, family=argonFont), command=self.sidebar_button_event, height=30, width=200, corner_radius=0, anchor="w",text_color="white", fg_color="transparent", bg_color="transparent", hover_color="#1a1a1a", compound="left", state=self.state_pinned["state_pinned6"])
         self.pinned_inst8.place(x=0, y=420)
-        self.pinned_inst9 = ct.CTkButton(self.sidebar_frame,text=self.pinned7,image=self.pinned7_img, font=ct.CTkFont(size=15, family="Inter"), command=self.sidebar_button_event, height=30, width=200, corner_radius=0, anchor="w",text_color="white", fg_color="transparent", bg_color="#262626", hover_color="#1a1a1a", compound="left", state=self.state_pinned["state_pinned7"])
+        self.pinned_inst9 = ct.CTkButton(self.sidebar_frame,text=self.pinned7,image=self.pinned7_img, font=ct.CTkFont(size=15, family=argonFont), command=self.sidebar_button_event, height=30, width=200, corner_radius=0, anchor="w",text_color="white", fg_color="transparent", bg_color="#262626", hover_color="#1a1a1a", compound="left", state=self.state_pinned["state_pinned7"])
         self.pinned_inst9.place(x=0, y=450)
-        self.pinned_inst10 = ct.CTkButton(self.sidebar_frame,text=self.pinned8,image=self.pinned8_img, font=ct.CTkFont(size=15, family="Inter"), command=self.sidebar_button_event, height=30, width=200, corner_radius=0, anchor="w",text_color="white", fg_color="transparent", bg_color="transparent", hover_color="#1a1a1a", compound="left", state=self.state_pinned["state_pinned8"])
+        self.pinned_inst10 = ct.CTkButton(self.sidebar_frame,text=self.pinned8,image=self.pinned8_img, font=ct.CTkFont(size=15, family=argonFont), command=self.sidebar_button_event, height=30, width=200, corner_radius=0, anchor="w",text_color="white", fg_color="transparent", bg_color="transparent", hover_color="#1a1a1a", compound="left", state=self.state_pinned["state_pinned8"])
         self.pinned_inst10.place(x=0, y=480)
-        self.pinned_inst11 = ct.CTkButton(self.sidebar_frame,text=self.pinned9,image=self.pinned9_img, font=ct.CTkFont(size=15, family="Inter"), command=self.sidebar_button_event, height=30, width=200, corner_radius=0, anchor="w",text_color="white", fg_color="transparent", bg_color="#262626", hover_color="#1a1a1a", compound="left", state=self.state_pinned["state_pinned9"])
+        self.pinned_inst11 = ct.CTkButton(self.sidebar_frame,text=self.pinned9,image=self.pinned9_img, font=ct.CTkFont(size=15, family=argonFont), command=self.sidebar_button_event, height=30, width=200, corner_radius=0, anchor="w",text_color="white", fg_color="transparent", bg_color="#262626", hover_color="#1a1a1a", compound="left", state=self.state_pinned["state_pinned9"])
         self.pinned_inst11.place(x=0, y=510)'''
             
 
-        self.play = ct.CTkButton(self.sidebar_frame,text=f"Play\n{str(self.selected_instance)}", font=ct.CTkFont(size=17, family="Inter"), command=self.runMinecraft, width=200, height=60, corner_radius=0)
+        self.play = ct.CTkButton(self.sidebar_frame,text=f"Play\n{str(self.selected_instance)}", font=ct.CTkFont(size=17, family=argonFont), command=self.runMinecraft, width=200, height=60, corner_radius=0)
         self.play.place(x=0, y=540)
         def login_spotify():
             pass
@@ -629,10 +705,10 @@ class Argon(ct.CTk):
         self.music_frame.grid_columnconfigure(0, weight=1)
         self.music_frame.grid_forget()
         back_img = ct.CTkImage(light_image=Image.open("img/back.png"), dark_image=Image.open("img/back.png"), size=(30, 30))
-        self.back_to_home_btn = ct.CTkButton(self.music_frame, image=back_img, text="Back", font=ct.CTkFont(size=15, family="Inter"), command=self.go_to_home, height=30, width=90, corner_radius=5, anchor="w", fg_color="#212121", bg_color="transparent", hover_color="#1a1a1a")
+        self.back_to_home_btn = ct.CTkButton(self.music_frame, image=back_img, text="Back", font=ct.CTkFont(size=15, family=argonFont), command=self.go_to_home, height=30, width=90, corner_radius=5, anchor="w", fg_color="#212121", bg_color="transparent", hover_color="#1a1a1a")
         self.back_to_home_btn.place(x=10, y=10)
         self.spot_img = ct.CTkImage(light_image=Image.open("img/music.png"), dark_image=Image.open("img/music.png"), size=(15, 15))
-        self.music_lib_label = ct.CTkLabel(self.music_frame, text="Music Library", font=ct.CTkFont(size=30, weight="bold", family="Inter"), fg_color="transparent", bg_color="transparent")
+        self.music_lib_label = ct.CTkLabel(self.music_frame, text="Music Library", font=ct.CTkFont(size=30, weight="bold", family=argonFont), fg_color="transparent", bg_color="transparent")
         self.music_lib_label.place(relx=0.5, rely=0.1, anchor="center")
 
         self.music_lib_frame = ct.CTkScrollableFrame(self.music_frame, corner_radius=10, height=400, width=700, bg_color="transparent")
@@ -646,7 +722,7 @@ class Argon(ct.CTk):
             music_img = ct.CTkImage(light_image=Image.open(f"music/{music_name}/thumbnail.jpg"), dark_image=Image.open(f"music/{music_name}/thumbnail.jpg"), size=(80, 56))
             music_img_label = ct.CTkLabel(music_frame, text="", image=music_img, bg_color="transparent", corner_radius=5)
             music_img_label.place(relx=0.01, rely=0.5, anchor="w")
-            music_label = ct.CTkLabel(music_frame, text=music_name, font=ct.CTkFont(size=20, family="Inter"), bg_color="transparent", text_color="white")
+            music_label = ct.CTkLabel(music_frame, text=music_name, font=ct.CTkFont(size=20, family=argonFont), bg_color="transparent", text_color="white")
             music_label.place(relx=0.15, rely=0.3, anchor="w")
             with open(f"music/{music_name}/metadata.json", "r") as f:
                 metadata = json.load(f)
@@ -654,11 +730,11 @@ class Argon(ct.CTk):
             dur = metadata["duration"]
             plat = metadata["platform"]
             auth = metadata["author"]
-            self.author = ct.CTkLabel(music_frame, text=auth, font=ct.CTkFont(size=15, family="Inter"), bg_color="transparent", text_color="#b3b3b3")
+            self.author = ct.CTkLabel(music_frame, text=auth, font=ct.CTkFont(size=15, family=argonFont), bg_color="transparent", text_color="#b3b3b3")
             self.author.place(relx=0.15, rely=0.68, anchor="w")
             play_img = ct.CTkImage(light_image=Image.open("img/play.png"), dark_image=Image.open("img/play.png"), size=(15, 15))
 
-            play_btn = ct.CTkButton(music_frame, image=play_img, text="Play", font=ct.CTkFont(size=15, family="Inter"), height=30, width=60, corner_radius=5, anchor="center", fg_color="#212121", bg_color="transparent", hover_color="#1a1a1a")
+            play_btn = ct.CTkButton(music_frame, image=play_img, text="Play", font=ct.CTkFont(size=15, family=argonFont), height=30, width=60, corner_radius=5, anchor="center", fg_color="#212121", bg_color="transparent", hover_color="#1a1a1a")
 
             play_btn.place(relx=0.95, rely=0.5, anchor="e")
 
@@ -680,7 +756,7 @@ class Argon(ct.CTk):
         #self.logo_image = ct.CTkImage(light_image=Image.open("img/logo.png"),dark_image=Image.open("img/logo.png"), size=(70, 70))
         #self.image_label = ct.CTkLabel(self.ch_frame, image=self.logo_image, text="", bg_color="transparent")
         #self.image_label.place(x=195, y=20)
-        #self.ch_label = ct.CTkLabel(self.ch_frame, text="Argon Launcher", font=ct.CTkFont(size=40, weight="bold", family="Inter"), fg_color="transparent")
+        #self.ch_label = ct.CTkLabel(self.ch_frame, text="Argon Launcher", font=ct.CTkFont(size=40, weight="bold", family=argonFont), fg_color="transparent")
         #self.ch_label.place(x=275, y=30)
         self.logo_img = ct.CTkImage(light_image=Image.open("img/argon.png"), dark_image=Image.open("img/argon.png"), size=(300, 100))
         self.logo_label = ct.CTkLabel(self.ch_frame, text="",image=self.logo_img, bg_color="#000001" if customBG == True else "transparent")
@@ -699,37 +775,37 @@ class Argon(ct.CTk):
             greeting = "Good afternoon"
         else:
             greeting = "Good evening"
-        self.greeting = ct.CTkLabel(self.stat_frame, text=greeting+", "+ username + ".", font=ct.CTkFont(size=30, weight="bold", family="Inter"), bg_color="transparent", anchor="center")
+        self.greeting = ct.CTkLabel(self.stat_frame, text=greeting+", "+ username + ".", font=ct.CTkFont(size=30, weight="bold", family=argonFont), bg_color="transparent", anchor="center")
         self.greeting.place(relx=0.03, rely=0.1, anchor="w")
 
-        #self.news_buttn = ct.CTkButton(self.stat_frame, text="Minecraft News", font=ct.CTkFont(size=15, family="Inter"), height=30, width=120, corner_radius=5, anchor="w", fg_color="#212121", bg_color="transparent", hover_color="#1a1a1a")
+        #self.news_buttn = ct.CTkButton(self.stat_frame, text="Minecraft News", font=ct.CTkFont(size=15, family=argonFont), height=30, width=120, corner_radius=5, anchor="w", fg_color="#212121", bg_color="transparent", hover_color="#1a1a1a")
         #self.news_buttn.place(relx=0.75, rely=0.1, anchor="w")
 
         self.time_frame = ct.CTkFrame(self.stat_frame, corner_radius=10, height=220, width=570, bg_color="transparent")
         self.time_frame.place(relx=0.5, rely=0.5675, anchor="center")
 
-        self.title_of_tf = ct.CTkLabel(self.time_frame, text="Total Time Played", font=ct.CTkFont(size=20, weight="bold", family="Inter"), bg_color="transparent")
+        self.title_of_tf = ct.CTkLabel(self.time_frame, text="Total Time Played", font=ct.CTkFont(size=20, weight="bold", family=argonFont), bg_color="transparent")
         self.title_of_tf.place(relx=0.025, rely=0.1, anchor="w")
         self.time_img = ct.CTkImage(light_image=Image.open("img/clock.png"), dark_image=Image.open("img/clock.png"), size=(30, 30))
         self.time_img_label = ct.CTkLabel(self.time_frame, text="", image=self.time_img, bg_color="transparent", corner_radius=5)
         self.time_img_label.place(relx=0.025, rely=0.25, anchor="w")
-        self.time_label = ct.CTkLabel(self.time_frame, text=playTime.fancyTimeToWords(playTime.getTotalTimePlayed()), font=ct.CTkFont(size=27, family="Inter"), bg_color="transparent")
+        self.time_label = ct.CTkLabel(self.time_frame, text=playTime.fancyTimeToWords(playTime.getTotalTimePlayed()), font=ct.CTkFont(size=27, family=argonFont), bg_color="transparent")
         self.time_label.place(relx=0.1, rely=0.25, anchor="w")
 
-        self.title_of_tf = ct.CTkLabel(self.time_frame, text="Favorite Instance", font=ct.CTkFont(size=20, weight="bold", family="Inter"), bg_color="transparent")     
+        self.title_of_tf = ct.CTkLabel(self.time_frame, text="Favorite Instance", font=ct.CTkFont(size=20, weight="bold", family=argonFont), bg_color="transparent")     
         self.title_of_tf.place(relx=0.025, rely=0.55, anchor="w")   
 
         self.fav_img = ct.CTkImage(light_image=Image.open("img/instance_icons/"+playTime.getFavInstIcon()+".png"), dark_image=Image.open("img/instance_icons/"+playTime.getFavInstIcon()+".png"), size=(30, 30))
         self.fav_img_label = ct.CTkLabel(self.time_frame, text="", image=self.fav_img, bg_color="transparent", corner_radius=5)
         self.fav_img_label.place(relx=0.025, rely=0.7, anchor="w")
 
-        self.fav_inst_label = ct.CTkLabel(self.time_frame, text=playTime.getFavInstance(), font=ct.CTkFont(size=27, family="Inter"), bg_color="transparent")
+        self.fav_inst_label = ct.CTkLabel(self.time_frame, text=playTime.getFavInstance(), font=ct.CTkFont(size=27, family=argonFont), bg_color="transparent")
         self.fav_inst_label.place(relx=0.1, rely=0.7, anchor="w")
         ''' Another update...
         def switchMuFra():
             self.ch_frame.grid_forget()
             self.music_frame.grid(row=0, column=1, sticky="nsew")
-        self.music_btn = ct.CTkButton(self.stat_frame, text="Play Music", image=self.spot_img, font=ct.CTkFont(size=15, family="Inter"), height=30, width=120, corner_radius=5, anchor="center", fg_color="#212121", bg_color="transparent", hover_color="#1a1a1a", command=switchMuFra)
+        self.music_btn = ct.CTkButton(self.stat_frame, text="Play Music", image=self.spot_img, font=ct.CTkFont(size=15, family=argonFont), height=30, width=120, corner_radius=5, anchor="center", fg_color="#212121", bg_color="transparent", hover_color="#1a1a1a", command=switchMuFra)
         self.music_btn.place(relx=0.75, rely=0.1, anchor="w")'''
 
         ''' This is the news frame. I have removed it because the RSS provided by Minecraft has been taken down. This is in protest ig (also to reduce loading time)
@@ -764,16 +840,16 @@ class Argon(ct.CTk):
                 globals()[var_name3] = ct.CTkLabel(globals()[var_name], text="", image=globals()[var_name2], bg_color="transparent", corner_radius=5)
                 globals()[var_name3].place(x=5, y=10)
                 var_name4 = "self.news"+str(counter)+"_title"
-                globals()[var_name4] = ct.CTkLabel(globals()[var_name], text=title, font=ct.CTkFont(size=25, weight="bold", family="Inter"),text_color="white", bg_color="transparent")
+                globals()[var_name4] = ct.CTkLabel(globals()[var_name], text=title, font=ct.CTkFont(size=25, weight="bold", family=argonFont),text_color="white", bg_color="transparent")
                 globals()[var_name4].place(x=110, y=10)
                 var_name5 = "self.news"+str(counter)+"_description"
-                globals()[var_name5] = ct.CTkLabel(globals()[var_name], text=description, font=ct.CTkFont(size=15, family="Inter"),text_color="#b3b3b3", bg_color="transparent")
+                globals()[var_name5] = ct.CTkLabel(globals()[var_name], text=description, font=ct.CTkFont(size=15, family=argonFont),text_color="#b3b3b3", bg_color="transparent")
                 globals()[var_name5].place(x=110, y=60)
                 var_name6 = "self.news"+str(counter)+"_readmore"
-                globals()[var_name6] = ct.CTkButton(globals()[var_name], text="Read More", font=ct.CTkFont(size=15, family="Inter"), command=functools.partial(open_url, guid), height=30, width=80, corner_radius=5, anchor="w", fg_color="transparent", bg_color="#262626", hover_color="#1a1a1a")
+                globals()[var_name6] = ct.CTkButton(globals()[var_name], text="Read More", font=ct.CTkFont(size=15, family=argonFont), command=functools.partial(open_url, guid), height=30, width=80, corner_radius=5, anchor="w", fg_color="transparent", bg_color="#262626", hover_color="#1a1a1a")
                 globals()[var_name6].place(x=680, y=60)
                 var_name7 = "self.news"+str(counter)+"_date"
-                globals()[var_name7] = ct.CTkLabel(globals()[var_name], text=str(pubDate), font=ct.CTkFont(size=15, family="Inter"),text_color="#b3b3b3", bg_color="transparent")
+                globals()[var_name7] = ct.CTkLabel(globals()[var_name], text=str(pubDate), font=ct.CTkFont(size=15, family=argonFont),text_color="#b3b3b3", bg_color="transparent")
                 globals()[var_name7].place(x=680, y=10)
                 if counter == 3:
                     break
@@ -810,9 +886,9 @@ class Argon(ct.CTk):
         self.inst_frame = ct.CTkFrame(self, corner_radius=0, height=600, fg_color="transparent")
         self.inst_frame.grid(row=0, column=1, sticky="nsew")
         self.inst_frame.grid_columnconfigure(0, weight=1)
-        self.inst_title = ct.CTkLabel(self.inst_frame, text="Instances", font=ct.CTkFont(size=40, weight="bold", family="Inter"), fg_color="transparent")
+        self.inst_title = ct.CTkLabel(self.inst_frame, text="Instances", font=ct.CTkFont(size=40, weight="bold", family=argonFont), fg_color="transparent")
         self.inst_title.place(x=40, y=20)
-        self.add_inst_button = ct.CTkButton(self.inst_frame, text="Add Instance", font=ct.CTkFont(size=15, family="Inter"), command=self.showAddInstanceWindow, height=30, width=120, corner_radius=5, anchor="center")
+        self.add_inst_button = ct.CTkButton(self.inst_frame, text="Add Instance", font=ct.CTkFont(size=15, family=argonFont), command=self.showAddInstanceWindow, height=30, width=120, corner_radius=5, anchor="center")
         self.add_inst_button.place(x=680, y=35)
         self.inst_list = ct.CTkScrollableFrame(self.inst_frame, corner_radius=8, height=468,width=765, bg_color="transparent")
         self.inst_list.place(relx=0.501, rely=0.55, anchor="center")
@@ -820,7 +896,7 @@ class Argon(ct.CTk):
 
         row_index = 0
         if instances == [{}]:
-            no_inst_label = ct.CTkLabel(self.inst_list, text="No instances found", font=ct.CTkFont(size=30, family="Inter"), bg_color="transparent", text_color="#b3b3b3")
+            no_inst_label = ct.CTkLabel(self.inst_list, text="No instances found", font=ct.CTkFont(size=30, family=argonFont), bg_color="transparent", text_color="#b3b3b3")
             no_inst_label.grid(row=0, column=0, sticky="nsew", pady=10, padx=10)
         for instance_dict in instances:
             for instance_name, instance_data_list in instance_dict.items():
@@ -833,19 +909,19 @@ class Argon(ct.CTk):
                 img_label = ct.CTkLabel(frame, text="", image=img, bg_color="transparent")
                 img_label.place(x=10, y=10)
                 
-                name_label = ct.CTkLabel(frame, text=instance_data["name"], font=ct.CTkFont(size=30, weight="bold", family="Inter"), bg_color="transparent")
+                name_label = ct.CTkLabel(frame, text=instance_data["name"], font=ct.CTkFont(size=30, weight="bold", family=argonFont), bg_color="transparent")
                 name_label.place(x=70, y=13)
 
-                version_label = ct.CTkLabel(frame, text=str(instance_data["method"]).capitalize() + " " + str(instance_data["type"]).capitalize() + " " + instance_data["version"], font=ct.CTkFont(size=15, family="Inter"), bg_color="transparent", text_color="#b3b3b3" if actualTheme == "dark" else "#585858")
+                version_label = ct.CTkLabel(frame, text=str(instance_data["method"]).capitalize() + " " + str(instance_data["type"]).capitalize() + " " + instance_data["version"], font=ct.CTkFont(size=15, family=argonFont), bg_color="transparent", text_color="#b3b3b3" if actualTheme == "dark" else "#585858")
                 version_label.place(x=70, y=50)
 
-                select_button = ct.CTkButton(frame, text="Select", font=ct.CTkFont(size=15, family="Inter"), command=functools.partial(self.choose_inst, instance_data["name"], instance_data["method"] + " " + instance_data["type"] + " " + instance_data["version"]), height=30, width=80, corner_radius=5, anchor="center")
+                select_button = ct.CTkButton(frame, text="Select", font=ct.CTkFont(size=15, family=argonFont), command=functools.partial(self.choose_inst, instance_data["name"], instance_data["method"] + " " + instance_data["type"] + " " + instance_data["version"]), height=30, width=80, corner_radius=5, anchor="center")
                 select_button.place(x=655, y=10)
                 
-                settings_button = ct.CTkButton(frame, text="Settings", font=ct.CTkFont(size=15, family="Inter"), command=lambda instee_name=instance_data["name"], instee_icon=instance_data["icon"], instee_version=instance_data["method"] + " " + instance_data["type"] + " " + instance_data["version"]: self.instance_settings(instee_name, instee_icon, instee_version), height=30, width=80, corner_radius=5, anchor="center")
+                settings_button = ct.CTkButton(frame, text="Settings", font=ct.CTkFont(size=15, family=argonFont), command=lambda instee_name=instance_data["name"], instee_icon=instance_data["icon"], instee_version=instance_data["method"] + " " + instance_data["type"] + " " + instance_data["version"]: self.instance_settings(instee_name, instee_icon, instee_version), height=30, width=80, corner_radius=5, anchor="center")
                 settings_button.place(x=655, y=50)
 
-                pinned_text_label = ct.CTkLabel(frame, text="Pinned:", font=ct.CTkFont(size=15, family="Inter"), bg_color="transparent", text_color="white")
+                pinned_text_label = ct.CTkLabel(frame, text="Pinned:", font=ct.CTkFont(size=15, family=argonFont), bg_color="transparent", text_color="white")
                 pinned_text_label.place(x=12, y=83)
                 var_name = "self.pinned_var"+str(row_index)
                 pinned_var = ct.StringVar(value="on" if instance_data["pinned"] else "off")
@@ -853,7 +929,7 @@ class Argon(ct.CTk):
                 pinned_checkbox = ct.CTkCheckBox(frame,text="", corner_radius=5, fg_color="white" if actualTheme == "dark" else "#1a1a1a", bg_color="transparent", command=lambda name=instance_data["name"], icon=instance_data["icon"], pinD_var=pinned_var, inst_name=instance_name: self.pinInstance(name, icon, pinD_var, inst_name), variable=pinned_var, onvalue="on",offvalue="off", checkbox_height=20, checkbox_width=20)
                 pinned_checkbox.place(x=75, y=85)
 
-                time_label = ct.CTkLabel(frame, text="Played for " +playTime.timeToWords(instance_data["timePlayed"]), font=ct.CTkFont(size=15, family="Inter"), bg_color="transparent", text_color="#b3b3b3" if actualTheme == "dark" else "#585858")
+                time_label = ct.CTkLabel(frame, text="Played for " +playTime.timeToWords(instance_data["timePlayed"]), font=ct.CTkFont(size=15, family=argonFont), bg_color="transparent", text_color="#b3b3b3" if actualTheme == "dark" else "#585858")
                 time_label.place(x=580, y=85)
 
                 # Store the frame in the dictionary
@@ -867,7 +943,7 @@ class Argon(ct.CTk):
         self.instance1_img = ct.CTkImage(light_image=get_icon_PIL(instance1[0]["icon"]), dark_image=get_icon_PIL(instance1[0]["icon"]), size=(50,50))
         self.instance1_img_label = ct.CTkLabel(self.instance1, text="", image=self.instance1_img, bg_color="transparent")
         self.instance1_img_label.place(x=10, y=10)
-        self.instance1_name = ct.CTkLabel(self.instance1, text=instance1[0]["name"], font=ct.CTkFont(size=20, weight="bold", family="Inter"), fg_color="white", bg_color="transparent")
+        self.instance1_name = ct.CTkLabel(self.instance1, text=instance1[0]["name"], font=ct.CTkFont(size=20, weight="bold", family=argonFont), fg_color="white", bg_color="transparent")
         self.instance1_name.place(x=70, y=20)
         self.instance2 = ct.CTkFrame(self.inst_list, corner_radius=7, height=190,width=230, fg_color="#262626")
         self.instance2.grid(row=0, column=1, sticky="nsew", pady=10, padx=10)
@@ -879,7 +955,7 @@ class Argon(ct.CTk):
         self.set_frame = ct.CTkFrame(self, corner_radius=0, height=600, fg_color="transparent")
         self.set_frame.grid(row=0, column=1, sticky="nsew")
         self.set_frame.grid_columnconfigure(0, weight=1)
-        self.settings_title = ct.CTkLabel(self.set_frame, text="Settings", font=ct.CTkFont(size=40, weight="bold", family="Inter"), fg_color="transparent")
+        self.settings_title = ct.CTkLabel(self.set_frame, text="Settings", font=ct.CTkFont(size=40, weight="bold", family=argonFont), fg_color="transparent")
         self.settings_title.place(x=40, y=20)
         self.settings_frame = ct.CTkFrame(self.set_frame, corner_radius=10, height=480,width=780, bg_color="transparent")
         self.settings_frame.place(relx=0.5, rely=0.555, anchor="center")
@@ -893,18 +969,18 @@ class Argon(ct.CTk):
                 self.mc_settings_frame.place_forget()
                 self.argon_settings_frame.place_forget()
                 self.argon_settings_frame.place(relx=0.5, rely=0.52, anchor="center")
-        self.switchtabs_segmentedbtn = ct.CTkSegmentedButton(self.settings_frame, command=lambda event: switch_tabs(), variable=variable, values=["Minecraft", "Argon"], font=ct.CTkFont(size=20, family="Inter"), height=30, width=120)
+        self.switchtabs_segmentedbtn = ct.CTkSegmentedButton(self.settings_frame, command=lambda event: switch_tabs(), variable=variable, values=["Minecraft", "Argon"], font=ct.CTkFont(size=20, family=argonFont), height=30, width=120)
         self.switchtabs_segmentedbtn.place(relx=0.4, y=10)
 
         self.mc_settings_frame = ct.CTkFrame(self.settings_frame, height=400, width=780, bg_color="transparent", fg_color="transparent")
         self.mc_settings_frame.place(relx=0.5, rely=0.52, anchor="center")
-        self.mc_dir_labl = ct.CTkLabel(self.mc_settings_frame, text="Minecraft Directory", font=ct.CTkFont(size=25, family="Inter"), fg_color="transparent")
+        self.mc_dir_labl = ct.CTkLabel(self.mc_settings_frame, text="Minecraft Directory", font=ct.CTkFont(size=25, family=argonFont), fg_color="transparent")
         self.mc_dir_labl.place(x=20, y=10)
         mc_dir_var = ct.StringVar(value=mc_dir)
-        self.mc_dir_entry = ct.CTkEntry(self.mc_settings_frame, font=ct.CTkFont(size=20, family="Inter"), width=500, corner_radius=5, textvariable=mc_dir_var)
+        self.mc_dir_entry = ct.CTkEntry(self.mc_settings_frame, font=ct.CTkFont(size=20, family=argonFont), width=500, corner_radius=5, textvariable=mc_dir_var)
         self.mc_dir_entry.place(x=20, y=50)
 
-        self.ram_label = ct.CTkLabel(self.mc_settings_frame, text="RAM Allocation", font=ct.CTkFont(size=25, family="Inter"), fg_color="transparent")
+        self.ram_label = ct.CTkLabel(self.mc_settings_frame, text="RAM Allocation", font=ct.CTkFont(size=25, family=argonFont), fg_color="transparent")
         self.ram_label.place(x=20, y=100)
         with open ("settings.json", "r") as js_read:
             s = js_read.read()
@@ -924,11 +1000,11 @@ class Argon(ct.CTk):
         ram_var = ct.IntVar(value=allocated_ram)
         self.ram_slider = ct.CTkSlider(self.mc_settings_frame, from_=100, to=total_ram, orientation="horizontal", width=500, fg_color="#7a7a7a", bg_color="transparent", corner_radius=5, variable=ram_var, command=lambda x: self.sel_ram.configure(text=f"Selected RAM: {ram_var.get()}MB"))
         self.ram_slider.place(x=20, y=140)
-        self.sel_ram = ct.CTkLabel(self.mc_settings_frame, text=f"Selected RAM: {ram_var.get()}MB", font=ct.CTkFont(size=15, family="Inter"), fg_color="transparent", text_color="#7a7a7a")
+        self.sel_ram = ct.CTkLabel(self.mc_settings_frame, text=f"Selected RAM: {ram_var.get()}MB", font=ct.CTkFont(size=15, family=argonFont), fg_color="transparent", text_color="#7a7a7a")
         self.sel_ram.place(x=20, y=165)
-        self.total_ram = ct.CTkLabel(self.mc_settings_frame, text=f"Total RAM: {total_ram}MB", font=ct.CTkFont(size=15, family="Inter"), fg_color="transparent", text_color="#7a7a7a")
+        self.total_ram = ct.CTkLabel(self.mc_settings_frame, text=f"Total RAM: {total_ram}MB", font=ct.CTkFont(size=15, family=argonFont), fg_color="transparent", text_color="#7a7a7a")
         self.total_ram.place(x=20, y=190)
-        self.bypass_label = ct.CTkLabel(self.mc_settings_frame, text="Bypass RAM Limiter", font=ct.CTkFont(size=25, family="Inter"), fg_color="transparent")
+        self.bypass_label = ct.CTkLabel(self.mc_settings_frame, text="Bypass RAM Limiter", font=ct.CTkFont(size=25, family=argonFont), fg_color="transparent")
         self.bypass_label.place(x=20, y=220)
         if ramlimiterExceptionBypassed == True:
             switch_var = ct.StringVar(value="on")
@@ -937,7 +1013,10 @@ class Argon(ct.CTk):
         self.by_switch = ct.CTkSwitch(self.mc_settings_frame, width=50, height=30, corner_radius=15, bg_color="transparent", fg_color="white", text="", variable=switch_var, onvalue="on", offvalue="off")
         self.by_switch.place(x=280, y=220)
         def viewLogs():
-            os.system("notepad.exe logs\\latest.log")
+            if os_name == "Windows":
+                os.system("notepad.exe logs\\latest.log")
+            elif os_name == "Linux":
+                msg.CTkMessagebox(title="Error", message="This feature is not supported yet on Linux.", icon="cancel")
         def deleteLogs():
             # Removes the logs folder
             try:
@@ -947,10 +1026,10 @@ class Argon(ct.CTk):
             except FileNotFoundError:
                 self.delete_logs_btn.configure(text="No logs found", bg_color="transparent")
                 self.delete_logs_btn.after(2000, lambda: self.delete_logs_btn.configure(text="Delete all logs", bg_color="transparent"))
-        self.view_logs_btn = ct.CTkButton(self.mc_settings_frame, text="View latest log", font=ct.CTkFont(size=15, family="Inter"), command=viewLogs, height=30, width=100, corner_radius=5, anchor="center")
+        self.view_logs_btn = ct.CTkButton(self.mc_settings_frame, text="View latest log", font=ct.CTkFont(size=15, family=argonFont), command=viewLogs, height=30, width=100, corner_radius=5, anchor="center")
         self.view_logs_btn.place(x=20, y=260)
         
-        self.delete_logs_btn = ct.CTkButton(self.mc_settings_frame, text="Delete all logs", font=ct.CTkFont(size=15, family="Inter"), command=deleteLogs, height=30, width=100, corner_radius=5, anchor="center", fg_color="#cc0000", bg_color="transparent", hover_color="#990000")
+        self.delete_logs_btn = ct.CTkButton(self.mc_settings_frame, text="Delete all logs", font=ct.CTkFont(size=15, family=argonFont), command=deleteLogs, height=30, width=100, corner_radius=5, anchor="center", fg_color="#cc0000", bg_color="transparent", hover_color="#990000")
         self.delete_logs_btn.place(x=150, y=260)
         def save_settings():
             if switch_var.get() == "on":
@@ -986,6 +1065,8 @@ class Argon(ct.CTk):
                 except:
                     msg.CTkMessagebox(title="Invalid Minecraft Directory", message="The minecraft directory you entered is invalid.", icon="cancel")
                     return
+            else:
+                mc_dir_newee = mc_dir
             settings["settings"][0]["allocated_ram"] = allocated_ram
             settings["settings"][0]["ramlimiterExceptionBypassed"] = ramlimiterExceptionBypassed
             settings["settings"][0]["ramlimiterExceptionBypassedSelected"] = ramlimiterExceptionBypassedSelected
@@ -994,14 +1075,14 @@ class Argon(ct.CTk):
                 js_write.write(json.dumps(settings, indent=4))
             print("Settings saved.")
             msg.CTkMessagebox(title="Settings Saved", message="Settings have been saved successfully.", icon="check")
-        self.save_button = ct.CTkButton(self.mc_settings_frame, text="Save", font=ct.CTkFont(size=15, family="Inter"), command=save_settings, height=30, width=80, corner_radius=5, anchor="center")
+        self.save_button = ct.CTkButton(self.mc_settings_frame, text="Save", font=ct.CTkFont(size=15, family=argonFont), command=save_settings, height=30, width=80, corner_radius=5, anchor="center")
         self.save_button.place(relx = 0.5, rely=0.95 , anchor="center")
         
         self.argon_settings_frame = ct.CTkFrame(self.settings_frame, height=400, width=780, bg_color="transparent", fg_color="transparent")
         self.argon_settings_frame.place(relx=0.5, rely=0.52, anchor="center")
-        #self.WIP_label = ct.CTkLabel(self.argon_settings_frame, text="Work in Progress", font=ct.CTkFont(size=30, family="Inter"), fg_color="transparent", text_color="#b3b3b3")
+        #self.WIP_label = ct.CTkLabel(self.argon_settings_frame, text="Work in Progress", font=ct.CTkFont(size=30, family=argonFont), fg_color="transparent", text_color="#b3b3b3")
         #self.WIP_label.place(relx=0.5, rely=0.45, anchor="center")
-        #self.verbose_label = ct.CTkLabel(self.argon_settings_frame, text="Verbose Mode", font=ct.CTkFont(size=25, family="Inter"), fg_color="transparent", text_color="white")
+        #self.verbose_label = ct.CTkLabel(self.argon_settings_frame, text="Verbose Mode", font=ct.CTkFont(size=25, family=argonFont), fg_color="transparent", text_color="white")
         #self.verbose_label.place(x=20, y=10)
         #if verbose == True:
         #    verbose_var = ct.StringVar(value="on")
@@ -1010,32 +1091,33 @@ class Argon(ct.CTk):
         #self.verbose_switch = ct.CTkSwitch(self.argon_settings_frame, width=50, height=30, corner_radius=15, bg_color="transparent", fg_color="white", text="", variable=verbose_var, onvalue="on", offvalue="off")
         #self.verbose_switch.place(x=220, y=10)
 
-        self.customization_label = ct.CTkLabel(self.argon_settings_frame, text="Customization", font=ct.CTkFont(size=25, family="Inter", weight="bold"), fg_color="transparent")
+        self.customization_label = ct.CTkLabel(self.argon_settings_frame, text="Customization", font=ct.CTkFont(size=25, family=argonFont, weight="bold"), fg_color="transparent")
         self.customization_label.place(x=20, y=10)
-        self.custom_back_label = ct.CTkLabel(self.argon_settings_frame, text="Custom Background", font=ct.CTkFont(size=20, family="Inter"), fg_color="transparent", text_color="#b3b3b3" if actualTheme == "dark" else "#585858")
+        self.custom_back_label = ct.CTkLabel(self.argon_settings_frame, text="Custom Background", font=ct.CTkFont(size=20, family=argonFont), fg_color="transparent", text_color="#b3b3b3" if actualTheme == "dark" else "#585858")
         self.custom_back_label.place(x=20, y=50)
+        def showLinuxCom():
+            msg.CTkMessagebox(title="Error", message="This feature is not supported yet on Linux.", icon="cancel")
         def openExplorer():
             filename = ct.filedialog.askopenfilename()
             self.custom_back_dir_entry.delete(0, "end")
             self.custom_back_dir_entry.insert(0, filename)
-
-        self.custom_back_dir_entry = ct.CTkEntry(self.argon_settings_frame, placeholder_text="Enter background path..", font=ct.CTkFont(size=20, family="Inter"), width=500, corner_radius=5)
+        self.custom_back_dir_entry = ct.CTkEntry(self.argon_settings_frame, placeholder_text="Enter background path..", font=ct.CTkFont(size=20, family=argonFont), width=500, corner_radius=5, state="disabled" if os_name == "Linux" else "normal")
         self.custom_back_dir_entry.place(x=20, y=90)
         if not customBackground[1] == "":
             self.custom_back_dir_entry.insert(0, customBackground[1])
         else:
             pass
-        self.openExplorerBTN = ct.CTkButton(self.argon_settings_frame, text="Explore", font=ct.CTkFont(size=15, family="Inter"), command=openExplorer, height=30, width=80, corner_radius=5, anchor="center")
+        self.openExplorerBTN = ct.CTkButton(self.argon_settings_frame, text="Explore", font=ct.CTkFont(size=15, family=argonFont), command=showLinuxCom if os_name == "Linux" else openExplorer, height=30, width=80, corner_radius=5, anchor="center")
         self.openExplorerBTN.place(x=530, y=90)
-        self.reset_btn = ct.CTkButton(self.argon_settings_frame, text="Reset", font=ct.CTkFont(size=15, family="Inter"), command=lambda: self.custom_back_dir_entry.delete(0, "end"), height=30, width=80, corner_radius=5, anchor="center")
+        self.reset_btn = ct.CTkButton(self.argon_settings_frame, text="Reset", font=ct.CTkFont(size=15, family=argonFont), command=lambda: self.custom_back_dir_entry.delete(0, "end"), height=30, width=80, corner_radius=5, anchor="center")
         self.reset_btn.place(x=620, y=90)
         # For some reason, the transparency feature is not working. I will fix it in the next update.
-        #self.blur_label = ct.CTkLabel(self.argon_settings_frame, text="Enable window transparency effects", font=ct.CTkFont(size=20, family="Inter"), fg_color="transparent", text_color="#b3b3b3")
+        #self.blur_label = ct.CTkLabel(self.argon_settings_frame, text="Enable window transparency effects", font=ct.CTkFont(size=20, family=argonFont), fg_color="transparent", text_color="#b3b3b3")
         #self.blur_label.place(x=20, y=130)
         #blur_var = ct.StringVar(value="on" if transparency else "off")
         #self.blur_switch = ct.CTkSwitch(self.argon_settings_frame, width=50, height=30, corner_radius=15, bg_color="transparent", fg_color="white", text="", variable=blur_var, onvalue="on", offvalue="off")
         #self.blur_switch.place(x=400, y=130)
-        self.theme_label = ct.CTkLabel(self.argon_settings_frame, text="Theme", font=ct.CTkFont(size=20, family="Inter"), fg_color="transparent", text_color="#b3b3b3" if actualTheme == "dark" else "#585858")
+        self.theme_label = ct.CTkLabel(self.argon_settings_frame, text="Theme", font=ct.CTkFont(size=20, family=argonFont), fg_color="transparent", text_color="#b3b3b3" if actualTheme == "dark" else "#585858")
         self.theme_label.place(x=20, y=130)
         themes = ["System", "Light", "Dark"]
         with open("settings.json", "r") as js_read:
@@ -1047,9 +1129,9 @@ class Argon(ct.CTk):
             data = json.loads(s)
         theme_name = data["settings"][0]["theme"]
         theme_var = ct.StringVar(value=theme_name)
-        self.themes_dropdown = ct.CTkOptionMenu(self.argon_settings_frame, values=themes,variable=theme_var, font=ct.CTkFont(size=15, family="Inter"), width=100, corner_radius=5, button_color="#565b5e", bg_color="transparent", button_hover_color="#3c3e41", fg_color="#343638", hover="#3c3e41")
+        self.themes_dropdown = ct.CTkOptionMenu(self.argon_settings_frame, values=themes,variable=theme_var, font=ct.CTkFont(size=15, family=argonFont), width=100, corner_radius=5, button_color="#565b5e", bg_color="transparent", button_hover_color="#3c3e41", fg_color="#343638", hover="#3c3e41")
         self.themes_dropdown.place(x=100, y=130)
-        #CTkScrollableDropdown(self.themes_dropdown, values=themes, font=ct.CTkFont(size=10, family="Inter"), width=100, frame_corner_radius=5, justify="left")
+        #CTkScrollableDropdown(self.themes_dropdown, values=themes, font=ct.CTkFont(size=10, family=argonFont), width=100, frame_corner_radius=5, justify="left")
 
         def argon_settings_save():
             with open("settings.json", "r") as js_read:
@@ -1104,7 +1186,7 @@ class Argon(ct.CTk):
 
 
 
-        self.save_button = ct.CTkButton(self.argon_settings_frame, text="Save", font=ct.CTkFont(size=15, family="Inter"), command=argon_settings_save, height=30, width=80, corner_radius=5, anchor="center")
+        self.save_button = ct.CTkButton(self.argon_settings_frame, text="Save", font=ct.CTkFont(size=15, family=argonFont), command=argon_settings_save, height=30, width=80, corner_radius=5, anchor="center")
         self.save_button.place(relx = 0.5, rely=0.95, anchor="center")
 
 
@@ -1133,11 +1215,11 @@ class Argon(ct.CTk):
             self.skin_label.place(x=190, y=140)
         if auth_type=="Offline":
             self.skin_label.place(x=200, y=140)
-        self.username_labelBig = ct.CTkLabel(self.acc_frame, text=username, font=ct.CTkFont(size=50, weight="bold", family="Inter"), bg_color="transparent")
+        self.username_labelBig = ct.CTkLabel(self.acc_frame, text=username, font=ct.CTkFont(size=50, weight="bold", family=argonFont), bg_color="transparent")
         self.username_labelBig.place(x=350, y=140)
-        self.account_label = ct.CTkLabel(self.acc_frame, text=f"{auth_type} Account", font=ct.CTkFont(size=20, family="Inter"), fg_color="transparent", text_color="#7a7a7a")
+        self.account_label = ct.CTkLabel(self.acc_frame, text=f"{auth_type} Account", font=ct.CTkFont(size=20, family=argonFont), fg_color="transparent", text_color="#7a7a7a")
         self.account_label.place(x=350, y=200)
-        self.change_skin_btn = ct.CTkButton(self.acc_frame, text="Change Skin", font=ct.CTkFont(size=15, family="Inter"), command=self.change_skin, height=30, width=120, corner_radius=5, anchor="center")
+        self.change_skin_btn = ct.CTkButton(self.acc_frame, text="Change Skin", font=ct.CTkFont(size=15, family=argonFont), command=self.change_skin, height=30, width=120, corner_radius=5, anchor="center")
         self.change_skin_btn.place(x=350, y=250)
         def sign_out_confirm():
             con = msg.CTkMessagebox(title="Sign Out", message="Are you sure you want to sign out?", icon="warning", option_1="No", option_2="Yes")
@@ -1146,19 +1228,22 @@ class Argon(ct.CTk):
                 self.sign_out()
             else:
                 pass
-        self.signout_btn = ct.CTkButton(self.acc_frame, text="Sign Out", font=ct.CTkFont(size=15, family="Inter"), command=sign_out_confirm, height=30, width=120, corner_radius=5, anchor="center", fg_color="#cc0000", hover_color="#990000")
+        self.signout_btn = ct.CTkButton(self.acc_frame, text="Sign Out", font=ct.CTkFont(size=15, family=argonFont), command=sign_out_confirm, height=30, width=120, corner_radius=5, anchor="center", fg_color="#cc0000", hover_color="#990000")
         self.signout_btn.place(x=350, y=290)
-        self.argon_version = ct.CTkLabel(self.acc_frame, text=f"Argon v{version}", font=ct.CTkFont(size=15, family="Inter"), fg_color="transparent", text_color="#7a7a7a")
+        self.argon_version = ct.CTkLabel(self.acc_frame, text=f"Argon v{version}", font=ct.CTkFont(size=15, family=argonFont), fg_color="transparent", text_color="#7a7a7a")
         self.argon_version.place(relx=0.01, rely=0.975, anchor="w")
-        self.builtby = ct.CTkLabel(self.acc_frame, text="Made by v-pun215.", font=ct.CTkFont(size=15, family="Inter"), fg_color="transparent", text_color="#7a7a7a")
+        self.builtby = ct.CTkLabel(self.acc_frame, text="Made by v-pun215.", font=ct.CTkFont(size=15, family=argonFont), fg_color="transparent", text_color="#7a7a7a")
         self.builtby.place(relx=0.99, rely=0.975, anchor="e")
         self.select_frame("home")
         endtime = time.time()
         print(f"Argon loaded in {round(endtime - starttime, 2)} seconds.")
-        if actualTheme == "dark":
-            pywinstyles.change_header_color(self, color="#242424")
-        else:
-            pywinstyles.change_header_color(self, color="#ebebeb")
+        if os_name == "Windows":
+            if actualTheme == "dark":
+                pywinstyles.change_header_color(self, color="#242424")
+            else:
+                pywinstyles.change_header_color(self, color="#ebebeb")
+
+        self.deiconify()
 
     '''  Future Update!
     def loading_screen(self):
@@ -1185,7 +1270,7 @@ class Argon(ct.CTk):
             fg_color = "#262626" if i % 2 != 0 else "transparent"
             hover_color = "#1a1a1a"
             print(pinned_text)
-            self.pinned_inst[f"pinned{i}"] = ct.CTkButton(self.sidebar_frame, text=pinned_text, image=pinned_img, font=ct.CTkFont(size=15, family="Inter"), command=lambda pinned_text=pinned_text: self.select_pinned_instance(pinned_text), height=30, width=200, corner_radius=0, anchor="w", state=self.state_pinned[f"state_pinned{i}"], fg_color=fg_color, hover_color=hover_color)
+            self.pinned_inst[f"pinned{i}"] = ct.CTkButton(self.sidebar_frame, text=pinned_text, image=pinned_img, font=ct.CTkFont(size=15, family=argonFont), command=lambda pinned_text=pinned_text: self.select_pinned_instance(pinned_text), height=30, width=200, corner_radius=0, anchor="w", state=self.state_pinned[f"state_pinned{i}"], fg_color=fg_color, hover_color=hover_color)
             self.pinned_inst[f"pinned{i}"].place(x=0, y=210 + (i + 1) * 30)
     def select_pinned_instance(self, instance_name):
         print(instance_name)
@@ -1235,7 +1320,7 @@ class Argon(ct.CTk):
         #self.logo_image = ct.CTkImage(light_image=Image.open("img/logo.png"),dark_image=Image.open("img/logo.png"), size=(70, 70))
         #self.image_label = ct.CTkLabel(self.ch_frame, image=self.logo_image, text="", bg_color="transparent")
         #self.image_label.place(x=195, y=20)
-        #self.ch_label = ct.CTkLabel(self.ch_frame, text="Argon Launcher", font=ct.CTkFont(size=40, weight="bold", family="Inter"), fg_color="transparent")
+        #self.ch_label = ct.CTkLabel(self.ch_frame, text="Argon Launcher", font=ct.CTkFont(size=40, weight="bold", family=argonFont), fg_color="transparent")
         #self.ch_label.place(x=275, y=30)
         self.logo_img = ct.CTkImage(light_image=Image.open("img/argon.png"), dark_image=Image.open("img/argon.png"), size=(300, 100))
         self.logo_label = ct.CTkLabel(self.ch_frame, text="",image=self.logo_img, bg_color="#000001" if customBG == True else "transparent")
@@ -1254,31 +1339,31 @@ class Argon(ct.CTk):
             greeting = "Good afternoon"
         else:
             greeting = "Good evening"
-        self.greeting = ct.CTkLabel(self.stat_frame, text=greeting+", "+ username + ".", font=ct.CTkFont(size=30, weight="bold", family="Inter"), bg_color="transparent", anchor="center")
+        self.greeting = ct.CTkLabel(self.stat_frame, text=greeting+", "+ username + ".", font=ct.CTkFont(size=30, weight="bold", family=argonFont), bg_color="transparent", anchor="center")
         self.greeting.place(relx=0.03, rely=0.1, anchor="w")
 
-        #self.news_buttn = ct.CTkButton(self.stat_frame, text="Minecraft News", font=ct.CTkFont(size=15, family="Inter"), height=30, width=120, corner_radius=5, anchor="w", fg_color="#212121", bg_color="transparent", hover_color="#1a1a1a")
+        #self.news_buttn = ct.CTkButton(self.stat_frame, text="Minecraft News", font=ct.CTkFont(size=15, family=argonFont), height=30, width=120, corner_radius=5, anchor="w", fg_color="#212121", bg_color="transparent", hover_color="#1a1a1a")
         #self.news_buttn.place(relx=0.75, rely=0.1, anchor="w")
 
         self.time_frame = ct.CTkFrame(self.stat_frame, corner_radius=10, height=220, width=570, bg_color="transparent")
         self.time_frame.place(relx=0.5, rely=0.5675, anchor="center")
 
-        self.title_of_tf = ct.CTkLabel(self.time_frame, text="Total Time Played", font=ct.CTkFont(size=20, weight="bold", family="Inter"), bg_color="transparent")
+        self.title_of_tf = ct.CTkLabel(self.time_frame, text="Total Time Played", font=ct.CTkFont(size=20, weight="bold", family=argonFont), bg_color="transparent")
         self.title_of_tf.place(relx=0.025, rely=0.1, anchor="w")
         self.time_img = ct.CTkImage(light_image=Image.open("img/clock.png"), dark_image=Image.open("img/clock.png"), size=(30, 30))
         self.time_img_label = ct.CTkLabel(self.time_frame, text="", image=self.time_img, bg_color="transparent", corner_radius=5)
         self.time_img_label.place(relx=0.025, rely=0.25, anchor="w")
-        self.time_label = ct.CTkLabel(self.time_frame, text=playTime.fancyTimeToWords(playTime.getTotalTimePlayed()), font=ct.CTkFont(size=27, family="Inter"), bg_color="transparent")
+        self.time_label = ct.CTkLabel(self.time_frame, text=playTime.fancyTimeToWords(playTime.getTotalTimePlayed()), font=ct.CTkFont(size=27, family=argonFont), bg_color="transparent")
         self.time_label.place(relx=0.1, rely=0.25, anchor="w")
 
-        self.title_of_tf = ct.CTkLabel(self.time_frame, text="Favorite Instance", font=ct.CTkFont(size=20, weight="bold", family="Inter"), bg_color="transparent")     
+        self.title_of_tf = ct.CTkLabel(self.time_frame, text="Favorite Instance", font=ct.CTkFont(size=20, weight="bold", family=argonFont), bg_color="transparent")     
         self.title_of_tf.place(relx=0.025, rely=0.55, anchor="w")   
 
         self.fav_img = ct.CTkImage(light_image=Image.open("img/instance_icons/"+playTime.getFavInstIcon()+".png"), dark_image=Image.open("img/instance_icons/"+playTime.getFavInstIcon()+".png"), size=(30, 30))
         self.fav_img_label = ct.CTkLabel(self.time_frame, text="", image=self.fav_img, bg_color="transparent", corner_radius=5)
         self.fav_img_label.place(relx=0.025, rely=0.7, anchor="w")
 
-        self.fav_inst_label = ct.CTkLabel(self.time_frame, text=playTime.getFavInstance(), font=ct.CTkFont(size=27, family="Inter"), bg_color="transparent")
+        self.fav_inst_label = ct.CTkLabel(self.time_frame, text=playTime.getFavInstance(), font=ct.CTkFont(size=27, family=argonFont), bg_color="transparent")
         self.fav_inst_label.place(relx=0.1, rely=0.7, anchor="w")
 
         self.ch_frame.grid_forget()
@@ -1290,8 +1375,13 @@ class Argon(ct.CTk):
         self.instance_settings_window.resizable(False, False)
         self.instance_settings_window.configure(bg="#262626")
         self.instance_settings_window.protocol("WM_DELETE_WINDOW", self.instance_settings_window.destroy)
-        self.instance_settings_window.after(200, lambda: self.instance_settings_window.iconbitmap("img/icon.ico"))
-        self.instance_settings_window.grab_set()
+        if os_name == "Windows":
+            self.instance_settings_window.after(200, lambda: self.instance_settings_window.iconbitmap("img/icon.ico"))
+            self.instance_settings_window.grab_set()
+        elif os_name == "Linux" or os_name == "Darwin":
+            self.instance_settings_window.iconbitmap("img/icon.png")
+        
+        
         self.instance_settings_var = ct.StringVar(value="Settings")
 
         self.menubar = ct.CTkSegmentedButton(self.instance_settings_window, values=["Settings", "Mods"], variable=self.instance_settings_var, height=30, width=200, command=self.change_settings_tab)
@@ -1300,7 +1390,7 @@ class Argon(ct.CTk):
         self.ins_settings_frame = ct.CTkFrame(self.instance_settings_window, corner_radius=10, height=435, width=770)
         self.ins_settings_frame.place(relx=0.5, rely=0.53, anchor="center")
         namevar = ct.StringVar(value=inst_name)
-        self.name_entry = ct.CTkEntry(self.ins_settings_frame, textvariable=namevar, width=300, corner_radius=5,  font=ct.CTkFont(size=25, family="Inter"), bg_color="transparent", placeholder_text="Name", placeholder_text_color="#b3b3b3")
+        self.name_entry = ct.CTkEntry(self.ins_settings_frame, textvariable=namevar, width=300, corner_radius=5,  font=ct.CTkFont(size=25, family=argonFont), bg_color="transparent", placeholder_text="Name", placeholder_text_color="#b3b3b3")
         self.name_entry.place(x=20, y=20)
         self.name_entry.configure
         with open("launcherProfiles.json", "r") as js_read:
@@ -1329,7 +1419,7 @@ class Argon(ct.CTk):
                             hover = "#1a1a1a"
                         self.icon_list.append(icon[f"icon{i}"])
                         self.icon_name = icon[f"icon{i}"]
-                        self.icon_select_btn = ct.CTkButton(self.ins_settings_frame, text="", image=get_icon_PIL(icon[f"icon{i}"]), font=ct.CTkFont(size=30, family="Inter"), command=lambda icon_name=self.icon_name: chooseIcon(icon_name), height=50, width=50, corner_radius=5, anchor="center", fg_color=fg, bg_color="transparent", hover_color=hover, compound="left")
+                        self.icon_select_btn = ct.CTkButton(self.ins_settings_frame, text="", image=get_icon_PIL(icon[f"icon{i}"]), font=ct.CTkFont(size=30, family=argonFont), command=lambda icon_name=self.icon_name: chooseIcon(icon_name), height=50, width=50, corner_radius=5, anchor="center", fg_color=fg, bg_color="transparent", hover_color=hover, compound="left")
                         if i<=14:
                             self.icon_select_btn.place(x=-25 + (i * 50), y=70)
                         elif i>14:
@@ -1360,7 +1450,7 @@ class Argon(ct.CTk):
                         hover = "#1a1a1a"
                     self.icon_list.append(icon[f"icon{i}"])
                     self.icon_name = icon[f"icon{i}"]
-                    self.icon_select_btn = ct.CTkButton(self.ins_settings_frame, text="", image=get_icon_PIL(icon[f"icon{i}"]), font=ct.CTkFont(size=30, family="Inter"), command=lambda icon_name=self.icon_name: chooseIcon(icon_name), height=50, width=50, corner_radius=5, anchor="center", fg_color=fg, bg_color="transparent", hover_color=hover, compound="left")
+                    self.icon_select_btn = ct.CTkButton(self.ins_settings_frame, text="", image=get_icon_PIL(icon[f"icon{i}"]), font=ct.CTkFont(size=30, family=argonFont), command=lambda icon_name=self.icon_name: chooseIcon(icon_name), height=50, width=50, corner_radius=5, anchor="center", fg_color=fg, bg_color="transparent", hover_color=hover, compound="left")
                     if i<=14:
                             self.icon_select_btn.place(x=-30 + (i * 50), y=70)
                     elif i>14:
@@ -1445,6 +1535,12 @@ class Argon(ct.CTk):
                         if instance_name == inst_name:
                             del instance[instance_name]
                             print("deleted")
+                            if os.path.exists(f"instances\\{inst_name}"):
+                                try:
+                                    shutil.rmtree(f"instances\\{inst_name}")
+                                    print(f"Deleted instance folder: {inst_name}")
+                                except Exception as e:
+                                    print(f"Error deleting instance folder: {e}")
                             break
 
                 
@@ -1501,9 +1597,9 @@ class Argon(ct.CTk):
             else:
                 pass
                 
-        self.save_btn = ct.CTkButton(self.ins_settings_frame, text="Save", font=ct.CTkFont(size=20, family="Inter"), command=save_settings, height=30, width=100, corner_radius=5, anchor="center")
+        self.save_btn = ct.CTkButton(self.ins_settings_frame, text="Save", font=ct.CTkFont(size=20, family=argonFont), command=save_settings, height=30, width=100, corner_radius=5, anchor="center")
         self.save_btn.place(x=280, y=370)
-        self.delete_btn = ct.CTkButton(self.ins_settings_frame, text="Delete", font=ct.CTkFont(size=20, family="Inter"), command=delete_instance, height=30, width=100, corner_radius=5, anchor="center", fg_color="#cc0000", hover_color="#990000")
+        self.delete_btn = ct.CTkButton(self.ins_settings_frame, text="Delete", font=ct.CTkFont(size=20, family=argonFont), command=delete_instance, height=30, width=100, corner_radius=5, anchor="center", fg_color="#cc0000", hover_color="#990000")
         self.delete_btn.place(x=420, y=370)
 
         '''!!------------------MODS-----------------!!'''
@@ -1515,18 +1611,18 @@ class Argon(ct.CTk):
             method = inst_version.split(" ")[0]
             version = inst_version.split(" ")[2]
             mod_loader = method
-            self.search_box = ct.CTkEntry(self.mods_frame, width=500, corner_radius=5,  font=ct.CTkFont(size=20, family="Inter"), bg_color="transparent", placeholder_text="Search mods...", placeholder_text_color="#b3b3b3")
+            self.search_box = ct.CTkEntry(self.mods_frame, width=500, corner_radius=5,  font=ct.CTkFont(size=20, family=argonFont), bg_color="transparent", placeholder_text="Search mods...", placeholder_text_color="#b3b3b3")
             self.search_box.place(x=10, y=10)
             self.instance_settings_window.bind("<Return>", lambda: self.search_mods(self.search_box.get(), inst_name, inst_version))
             self.search_image = ct.CTkImage(light_image=Image.open("img/search.png"), dark_image=Image.open("img/search.png"), size=(25,25))
             search_text = self.search_box.get()
-            self.search_btn = ct.CTkButton(self.mods_frame, text="", image=self.search_image, font=ct.CTkFont(size=20, family="Inter"), command=lambda inst_name=inst_name, inst_version=inst_version: self.search_mods(query=self.search_box.get(), inst_name=inst_name, inst_version=inst_version), corner_radius=5, anchor="center", width=25, height=25, bg_color="transparent", fg_color="transparent", hover_color="#1a1a1a")
+            self.search_btn = ct.CTkButton(self.mods_frame, text="", image=self.search_image, font=ct.CTkFont(size=20, family=argonFont), command=lambda inst_name=inst_name, inst_version=inst_version: self.search_mods(query=self.search_box.get(), inst_name=inst_name, inst_version=inst_version), corner_radius=5, anchor="center", width=25, height=25, bg_color="transparent", fg_color="transparent", hover_color="#1a1a1a")
             self.search_btn.place(x=515, y=10)
             self.modrinth_logo = ct.CTkImage(light_image=Image.open("img/modrinth.png"), dark_image=Image.open("img/modrinth.png"), size=(25, 25))
-            self.modrinth_btn = ct.CTkButton(self.mods_frame, text="", image=self.modrinth_logo, font=ct.CTkFont(size=20, family="Inter"), command=lambda: self.switchToModrinth(), corner_radius=5, anchor="center", width=25, height=25, bg_color="transparent", fg_color="#22da6f", hover_color="#19924c")
+            self.modrinth_btn = ct.CTkButton(self.mods_frame, text="", image=self.modrinth_logo, font=ct.CTkFont(size=20, family=argonFont), command=lambda: self.switchToModrinth(), corner_radius=5, anchor="center", width=25, height=25, bg_color="transparent", fg_color="#22da6f", hover_color="#19924c")
             self.modrinth_btn.place(x=670, y=10)
             self.folder_logo = ct.CTkImage(light_image=Image.open("img/folder.png"), dark_image=Image.open("img/folder.png"), size=(25, 25))
-            self.folder_btn = ct.CTkButton(self.mods_frame, text="", image=self.folder_logo, font=ct.CTkFont(size=20, family="Inter"), command=lambda: self.switchToDir(instance_name=inst_name), corner_radius=5, anchor="center", width=25, height=25, bg_color="transparent", fg_color="white", hover_color="#929292")
+            self.folder_btn = ct.CTkButton(self.mods_frame, text="", image=self.folder_logo, font=ct.CTkFont(size=20, family=argonFont), command=lambda: self.switchToDir(instance_name=inst_name), corner_radius=5, anchor="center", width=25, height=25, bg_color="transparent", fg_color="white", hover_color="#929292")
             self.folder_btn.place(x=715, y=10)
 
             self.mods_list_frame = ct.CTkScrollableFrame(self.mods_frame, corner_radius=8, height=370, width=750, fg_color="#2b2b2b" if actualTheme == "dark" else "#dbdbdb", bg_color="transparent")
@@ -1535,7 +1631,7 @@ class Argon(ct.CTk):
             self.loading_label = ct.CTkLabel(
                 self.mods_list_frame, 
                 text="Loading...", 
-                font=ct.CTkFont(size=20, family="Inter", weight="bold"), 
+                font=ct.CTkFont(size=20, family=argonFont, weight="bold"), 
                 text_color="#b3b3b3" if actualTheme == "dark" else "#585858"
             )
             self.loading_label.grid(row=0, column=0, sticky="nsew", pady=20, padx=20)
@@ -1548,7 +1644,7 @@ class Argon(ct.CTk):
 
             dir = f"instances\\{inst_name}\\mods"
             if not os.path.exists(dir):
-                self.noMods_label = ct.CTkLabel(self.directory_frame, text="This instance has no mods.", font=ct.CTkFont(size=20, family="Inter"), fg_color="transparent", bg_color="transparent", text_color="#b3b3b3" if actualTheme == "dark" else "#585858")
+                self.noMods_label = ct.CTkLabel(self.directory_frame, text="This instance has no mods.", font=ct.CTkFont(size=20, family=argonFont), fg_color="transparent", bg_color="transparent", text_color="#b3b3b3" if actualTheme == "dark" else "#585858")
                 self.noMods_label.place(relx=0.5, rely=0.5, anchor="center")
             else:
                 try:
@@ -1562,16 +1658,16 @@ class Argon(ct.CTk):
                 for file in jar_files:
                     self.jar_frame = ct.CTkFrame(self.directory_frame, corner_radius=7, height=50, width=730, fg_color="#373737")
                     self.jar_frame.grid(row=row_index, column=0, sticky="nsew", pady=7, padx=7)
-                    self.jar_title = ct.CTkLabel(self.jar_frame, text=file.strip(".jar"), font=ct.CTkFont(size=25, family="Inter"), text_color="white", fg_color="transparent", bg_color="transparent")
+                    self.jar_title = ct.CTkLabel(self.jar_frame, text=file.strip(".jar"), font=ct.CTkFont(size=25, family=argonFont), text_color="white", fg_color="transparent", bg_color="transparent")
                     self.jar_title.place(x=10, y=10)
                     self.delete_img = ct.CTkImage(light_image=Image.open("img/delete.png"), dark_image=Image.open("img/delete.png"), size=(20, 20))
-                    self.delete_btn = ct.CTkButton(self.jar_frame, text="", image=self.delete_img, font=ct.CTkFont(size=15, family="Inter"), command=lambda file=file: self.delete_mod(file, inst_name), height=20, width=20, corner_radius=5, anchor="center", fg_color="white", bg_color="transparent", hover_color="#8a8a8a")
+                    self.delete_btn = ct.CTkButton(self.jar_frame, text="", image=self.delete_img, font=ct.CTkFont(size=15, family=argonFont), command=lambda file=file: self.delete_mod(file, inst_name), height=20, width=20, corner_radius=5, anchor="center", fg_color="white", bg_color="transparent", hover_color="#8a8a8a")
                     self.delete_btn.place(x=685, y=10)
                     row_index += 1
 
         
         else:
-            self.banner = ct.CTkLabel(self.mods_frame, text="This instance is not modded.", font=ct.CTkFont(size=30, family="Inter"), fg_color="transparent", bg_color="transparent", text_color="#b3b3b3" if actualTheme == "dark" else "#585858")
+            self.banner = ct.CTkLabel(self.mods_frame, text="This instance is not modded.", font=ct.CTkFont(size=30, family=argonFont), fg_color="transparent", bg_color="transparent", text_color="#b3b3b3" if actualTheme == "dark" else "#585858")
             self.banner.place(relx=0.5, rely=0.5, anchor="center")
 
     def search_mods(self, query, inst_name, inst_version):
@@ -1581,7 +1677,7 @@ class Argon(ct.CTk):
         self.loading_label = ct.CTkLabel(
             self.mods_list_frame, 
             text="Loading...", 
-            font=ct.CTkFont(size=30, family="Inter"), 
+            font=ct.CTkFont(size=30, family=argonFont), 
             text_color="#b3b3b3"
         )
         self.loading_label.grid(row=0, column=0, sticky="nsew", pady=20, padx=20)
@@ -1601,17 +1697,17 @@ class Argon(ct.CTk):
             os.makedirs(currn_dir + "\\" + dir)
             jar_files = []
         if jar_files == []:
-            self.noMods_label = ct.CTkLabel(self.directory_frame, text="This instance has no mods.", font=ct.CTkFont(size=20, family="Inter"), fg_color="transparent", bg_color="transparent", text_color="#b3b3b3" if actualTheme == "dark" else "#585858")
+            self.noMods_label = ct.CTkLabel(self.directory_frame, text="This instance has no mods.", font=ct.CTkFont(size=20, family=argonFont), fg_color="transparent", bg_color="transparent", text_color="#b3b3b3" if actualTheme == "dark" else "#585858")
             self.noMods_label.grid(row=0, column=0, sticky="nsew", pady=20, padx=20)
             return
         row_index = 0
         for file in jar_files:
             self.jar_frame = ct.CTkFrame(self.directory_frame, corner_radius=7, height=50, width=730, fg_color="#373737" if actualTheme == "dark" else "#585858")
             self.jar_frame.grid(row=row_index, column=0, sticky="nsew", pady=7, padx=7)
-            self.jar_title = ct.CTkLabel(self.jar_frame, text=file.strip(".jar"), font=ct.CTkFont(size=25, family="Inter"), text_color="white", fg_color="transparent", bg_color="transparent")
+            self.jar_title = ct.CTkLabel(self.jar_frame, text=file.strip(".jar"), font=ct.CTkFont(size=25, family=argonFont), text_color="white", fg_color="transparent", bg_color="transparent")
             self.jar_title.place(x=10, y=10)
             self.delete_img = ct.CTkImage(light_image=Image.open("img/delete.png"), dark_image=Image.open("img/delete.png"), size=(20, 20))
-            self.delete_btn = ct.CTkButton(self.jar_frame, text="", image=self.delete_img, font=ct.CTkFont(size=15, family="Inter"), command=lambda file=file: self.delete_mod(file, inst_name), height=20, width=20, corner_radius=5, anchor="center", fg_color="white", bg_color="transparent", hover_color="#8a8a8a")
+            self.delete_btn = ct.CTkButton(self.jar_frame, text="", image=self.delete_img, font=ct.CTkFont(size=15, family=argonFont), command=lambda file=file: self.delete_mod(file, inst_name), height=20, width=20, corner_radius=5, anchor="center", fg_color="white", bg_color="transparent", hover_color="#8a8a8a")
             self.delete_btn.place(x=685, y=10)
             row_index += 1
 
@@ -1624,7 +1720,7 @@ class Argon(ct.CTk):
         self.directory_frame.place(relx=0.5, rely=0.54, anchor="center")
         dir = f"instances\\{inst_name}\\mods"
         if not os.path.exists(dir):
-            self.noMods_label = ct.CTkLabel(self.directory_frame, text="This instance has no mods.", font=ct.CTkFont(size=20, family="Inter"), fg_color="transparent", bg_color="transparent", text_color="#b3b3b3")
+            self.noMods_label = ct.CTkLabel(self.directory_frame, text="This instance has no mods.", font=ct.CTkFont(size=20, family=argonFont), fg_color="transparent", bg_color="transparent", text_color="#b3b3b3")
             self.noMods_label.place(relx=0.5, rely=0.5, anchor="center")
         else:
             jar_files = [f for f in os.listdir(dir) if f.endswith('.jar')]
@@ -1632,10 +1728,10 @@ class Argon(ct.CTk):
             for file in jar_files:
                 self.jar_frame = ct.CTkFrame(self.directory_frame, corner_radius=7, height=50, width=730, fg_color="#373737")
                 self.jar_frame.grid(row=row_index, column=0, sticky="nsew", pady=7, padx=7)
-                self.jar_title = ct.CTkLabel(self.jar_frame, text=file.strip(".jar"), font=ct.CTkFont(size=25, family="Inter", weight="bold"), text_color="white", fg_color="transparent", bg_color="transparent")
+                self.jar_title = ct.CTkLabel(self.jar_frame, text=file.strip(".jar"), font=ct.CTkFont(size=25, family=argonFont, weight="bold"), text_color="white", fg_color="transparent", bg_color="transparent")
                 self.jar_title.place(x=10, y=10)
                 self.delete_img = ct.CTkImage(light_image=Image.open("img/delete.png"), dark_image=Image.open("img/delete.png"), size=(20, 20))
-                self.delete_btn = ct.CTkButton(self.jar_frame, text="", image=self.delete_img, font=ct.CTkFont(size=15, family="Inter"), command=lambda file=file: self.delete_mod(file, inst_name), height=20, width=20, corner_radius=5, anchor="center", fg_color="white", bg_color="transparent", hover_color="#8a8a8a")
+                self.delete_btn = ct.CTkButton(self.jar_frame, text="", image=self.delete_img, font=ct.CTkFont(size=15, family=argonFont), command=lambda file=file: self.delete_mod(file, inst_name), height=20, width=20, corner_radius=5, anchor="center", fg_color="white", bg_color="transparent", hover_color="#8a8a8a")
                 self.delete_btn.place(x=685, y=10)
                 row_index += 1
     def switchToModrinth(self):
@@ -1676,7 +1772,7 @@ class Argon(ct.CTk):
     def process_data(self, instname, inst_version, list2):
         # ---- MODS FRAME ------
         if connected == False:
-            self.no_internet_label = ct.CTkLabel(self.mods_list_frame, text="No internet connection.", text_color="#b3b3b3" if actualTheme == "dark" else "#585858", font=ct.CTkFont(size=20, family="Inter"))
+            self.no_internet_label = ct.CTkLabel(self.mods_list_frame, text="No internet connection.", text_color="#b3b3b3" if actualTheme == "dark" else "#585858", font=ct.CTkFont(size=20, family=argonFont))
             self.no_internet_label.grid(row=0, column=0, sticky="nsew", pady=20, padx=20)
             return
         mod_loader = inst_version.split(" ")[0]
@@ -1685,7 +1781,7 @@ class Argon(ct.CTk):
             self.loading_label = ct.CTkLabel(
                 self.mods_list_frame, 
                 text="Loading...", 
-                font=ct.CTkFont(size=16, family="Inter", weight="bold"), 
+                font=ct.CTkFont(size=16, family=argonFont, weight="bold"), 
                 text_color="#b3b3b3" if actualTheme == "dark" else "#585858"
             )
             self.loading_label.place(relx=0.5, rely=0.5, anchor="center")
@@ -1719,7 +1815,7 @@ class Argon(ct.CTk):
             self.mod_title = ct.CTkLabel(
                 self.mod_frame,
                 text=mod["title"] if mod_type != "Modpack" else mod["title"] + " (Modpack)",
-                font=ct.CTkFont(size=25, family="Inter", weight="bold"),
+                font=ct.CTkFont(size=25, family=argonFont, weight="bold"),
                 fg_color="transparent",
                 bg_color="transparent",
             )
@@ -1729,12 +1825,12 @@ class Argon(ct.CTk):
             self.mod_type = ct.CTkLabel(
                 self.mod_frame,
                 text=mod_type if mod_type != "None" else "Mod",
-                font=ct.CTkFont(size=15, family="Inter"),
+                font=ct.CTkFont(size=15, family=argonFont),
                 text_color="#b3b3b3" if actualTheme == "dark" else "#585858",
                 fg_color="transparent",
                 bg_color="transparent",
             )
-            self.description = ct.CTkLabel(self.mod_frame, text=mod["description"], font=ct.CTkFont(size=15, family="Inter"), text_color="#b3b3b3" if actualTheme == "dark" else "#585858", fg_color="transparent", bg_color="transparent", wraplength=420, justify="left")
+            self.description = ct.CTkLabel(self.mod_frame, text=mod["description"], font=ct.CTkFont(size=15, family=argonFont), text_color="#b3b3b3" if actualTheme == "dark" else "#585858", fg_color="transparent", bg_color="transparent", wraplength=420, justify="left")
             self.description.place(x=110, y=40)
             self.down_img = ct.CTkImage(light_image=Image.open("img/download.png"), dark_image=Image.open("img/download.png"), size=(20, 20))
             if not mc_version in mod["versions"]:
@@ -1746,10 +1842,10 @@ class Argon(ct.CTk):
             else:
                 button_state = "normal"
                 button_command = lambda mod_slug=mod["slug"], instance_name=instname, mod_loader=mod_loader, mc_version=mc_version: self.download_mod(mod_slug, instance_name, mod_loader, mc_version)
-            self.download_mod_btn = ct.CTkButton(self.mod_frame, text="Download", image=self.down_img, font=ct.CTkFont(size=15, family="Inter"), command=button_command, height=20, width=60, corner_radius=5, anchor="w", state=button_state, fg_color="#1bd96a", bg_color="transparent", hover_color="#22ff84", text_color="black")
+            self.download_mod_btn = ct.CTkButton(self.mod_frame, text="Download", image=self.down_img, font=ct.CTkFont(size=15, family=argonFont), command=button_command, height=20, width=60, corner_radius=5, anchor="w", state=button_state, fg_color="#1bd96a", bg_color="transparent", hover_color="#22ff84", text_color="black")
             self.download_mod_btn.place(relx=0.9, rely=0.3, anchor="center")
             see_more_img = ct.CTkImage(light_image=Image.open("img/seemore.png"), dark_image=Image.open("img/seemore.png"), size=(20, 20))
-            self.see_more_btn = ct.CTkButton(self.mod_frame, image=see_more_img, text="See More", font=ct.CTkFont(size=15, family="Inter"), height=20, command=lambda mod_slug=mod["slug"]: webbrowser.open(f"https://modrinth.com/mod/{mod_slug}"), width=85, corner_radius=5, anchor="center", text_color="black", fg_color="white", bg_color="transparent", hover_color="#949494")
+            self.see_more_btn = ct.CTkButton(self.mod_frame, image=see_more_img, text="See More", font=ct.CTkFont(size=15, family=argonFont), height=20, command=lambda mod_slug=mod["slug"]: webbrowser.open(f"https://modrinth.com/mod/{mod_slug}"), width=85, corner_radius=5, anchor="center", text_color="black", fg_color="white", bg_color="transparent", hover_color="#949494")
             self.see_more_btn.place(relx=0.9, rely=0.7, anchor="center")
 
             row_index += 1
@@ -1763,7 +1859,10 @@ class Argon(ct.CTk):
         self.downloading_window.title("Downloading "+mod_type)
         self.downloading_window.geometry("400x100")
         self.downloading_window.resizable(False, False)
-        self.downloading_window.after(200, lambda: self.downloading_window.iconbitmap("img/icon.ico"))
+        if os_name == "Windows":
+            self.downloading_window.after(200, lambda: self.downloading_window.iconbitmap("img/icon.ico"))
+        elif os_name == "Linux":
+            pass
         self.downloading_window.grab_set()
 
         self.downloading_bar = ct.CTkProgressBar(self.downloading_window, width=300, height=30, corner_radius=5, mode="indeterminate")
@@ -1811,15 +1910,24 @@ class Argon(ct.CTk):
         elif auth_type == "Offline":
             msg.CTkMessagebox(title="Error", message="You cannot change the skin of an offline account.", icon="cancel")
     def sign_out(self):
-        msg.CTkMessagebox(title="Sign Out", message="Are you sure you want to sign out?", icon="warning", option_1="No", option_2="Yes")
-        response = msg.CTkMessagebox.get()
+        prompt = msg.CTkMessagebox(title="Sign Out", message="Are you sure you want to sign out?", icon="warning", option_1="No", option_2="Yes")
+        response = prompt.get()
         if response == "Yes":
 
             os.remove("launcherProfiles.json")
             os.remove("settings.json")
             msg.CTkMessagebox(title="Signed Out", message="You have been signed out.", icon="check")
             self.destroy()
-            os.system("python signin.py")
+            if os_name == "Windows":
+                subprocess.Popen(["python", "signin.py"], creationflags=subprocess.CREATE_NEW_CONSOLE)
+                sys.exit()
+            elif os_name == "Linux" or os_name == "Darwin":
+                # For Linux and macOS, we can use subprocess without creationflags
+                subprocess.Popen(["python3", "signin.py"])
+                sys.exit()
+            else:
+                subprocess.Popen(["python3", "signin.py"])
+                sys.exit()
         else:
             pass
 
@@ -1833,12 +1941,15 @@ class Argon(ct.CTk):
         self.changing_theme_window.title("Changing Theme")
         self.changing_theme_window.geometry("400x200")
         self.changing_theme_window.resizable(False, False)
-        self.changing_theme_window.after(200, lambda: self.changing_theme_window.iconbitmap("img/icon.ico"))
+        if os_name == "Windows":
+            self.changing_theme_window.after(200, lambda: self.changing_theme_window.iconbitmap("img/icon.ico"))
+        else:
+            pass
         self.changing_theme_window.grab_set()
         def passeee():
             pass
         self.changing_theme_window.protocol("WM_DELETE_WINDOW", passeee)
-        self.labelee = ct.CTkLabel(self.changing_theme_window, text="Changing theme...", font=ct.CTkFont(size=20, family="Inter"))
+        self.labelee = ct.CTkLabel(self.changing_theme_window, text="Changing theme...", font=ct.CTkFont(size=20, family=argonFont))
         self.labelee.place(relx=0.5, rely=0.5, anchor="center")
         self.destroy()
         self.restartArgon()
@@ -1871,9 +1982,9 @@ class Argon(ct.CTk):
         self.inst_frame = ct.CTkFrame(self, corner_radius=0, height=600, fg_color="transparent")
         self.inst_frame.grid(row=0, column=1, sticky="nsew")
         self.inst_frame.grid_columnconfigure(0, weight=1)
-        self.inst_title = ct.CTkLabel(self.inst_frame, text="Instances", font=ct.CTkFont(size=40, weight="bold", family="Inter"), fg_color="transparent")
+        self.inst_title = ct.CTkLabel(self.inst_frame, text="Instances", font=ct.CTkFont(size=40, weight="bold", family=argonFont), fg_color="transparent")
         self.inst_title.place(x=40, y=20)
-        self.add_inst_button = ct.CTkButton(self.inst_frame, text="Add Instance", font=ct.CTkFont(size=15, family="Inter"), command=self.showAddInstanceWindow, height=30, width=120, corner_radius=5, anchor="center")
+        self.add_inst_button = ct.CTkButton(self.inst_frame, text="Add Instance", font=ct.CTkFont(size=15, family=argonFont), command=self.showAddInstanceWindow, height=30, width=120, corner_radius=5, anchor="center")
         self.add_inst_button.place(x=680, y=35)
         self.inst_list = ct.CTkScrollableFrame(self.inst_frame, corner_radius=8, height=468,width=765, fg_color="#2b2b2b", bg_color="transparent")
         self.inst_list.place(relx=0.501, rely=0.55, anchor="center")
@@ -1881,7 +1992,7 @@ class Argon(ct.CTk):
 
         row_index = 0
         if instances == [{}]:
-            no_inst_label = ct.CTkLabel(self.inst_list, text="No instances found", font=ct.CTkFont(size=30, family="Inter"), bg_color="transparent", text_color="#b3b3b3")
+            no_inst_label = ct.CTkLabel(self.inst_list, text="No instances found", font=ct.CTkFont(size=30, family=argonFont), bg_color="transparent", text_color="#b3b3b3")
             no_inst_label.grid(row=0, column=0, sticky="nsew", pady=10, padx=10)
         for instance_dict in instances:
             for instance_name, instance_data_list in instance_dict.items():
@@ -1894,19 +2005,19 @@ class Argon(ct.CTk):
                 img_label = ct.CTkLabel(frame, text="", image=img, bg_color="transparent")
                 img_label.place(x=10, y=10)
                 
-                name_label = ct.CTkLabel(frame, text=instance_data["name"], font=ct.CTkFont(size=30, weight="bold", family="Inter"), bg_color="transparent")
+                name_label = ct.CTkLabel(frame, text=instance_data["name"], font=ct.CTkFont(size=30, weight="bold", family=argonFont), bg_color="transparent")
                 name_label.place(x=70, y=13)
 
-                version_label = ct.CTkLabel(frame, text=str(instance_data["method"]).capitalize() + " " + str(instance_data["type"]).capitalize() + " " + instance_data["version"], font=ct.CTkFont(size=15, family="Inter"), bg_color="transparent", text_color="#b3b3b3")
+                version_label = ct.CTkLabel(frame, text=str(instance_data["method"]).capitalize() + " " + str(instance_data["type"]).capitalize() + " " + instance_data["version"], font=ct.CTkFont(size=15, family=argonFont), bg_color="transparent", text_color="#b3b3b3")
                 version_label.place(x=70, y=50)
 
-                select_button = ct.CTkButton(frame, text="Select", font=ct.CTkFont(size=15, family="Inter"), command=functools.partial(self.choose_inst, instance_data["name"], instance_data["method"] + " " + instance_data["type"] + " " + instance_data["version"]), height=30, width=80, corner_radius=5, anchor="center")
+                select_button = ct.CTkButton(frame, text="Select", font=ct.CTkFont(size=15, family=argonFont), command=functools.partial(self.choose_inst, instance_data["name"], instance_data["method"] + " " + instance_data["type"] + " " + instance_data["version"]), height=30, width=80, corner_radius=5, anchor="center")
                 select_button.place(x=655, y=10)
                 
-                settings_button = ct.CTkButton(frame, text="Settings", font=ct.CTkFont(size=15, family="Inter"), command=lambda instee_name=instance_data["name"], instee_icon=instance_data["icon"], instee_version=instance_data["method"] + " " + instance_data["type"] + " " + instance_data["version"]: self.instance_settings(instee_name, instee_icon, instee_version), height=30, width=80, corner_radius=5, anchor="center")
+                settings_button = ct.CTkButton(frame, text="Settings", font=ct.CTkFont(size=15, family=argonFont), command=lambda instee_name=instance_data["name"], instee_icon=instance_data["icon"], instee_version=instance_data["method"] + " " + instance_data["type"] + " " + instance_data["version"]: self.instance_settings(instee_name, instee_icon, instee_version), height=30, width=80, corner_radius=5, anchor="center")
                 settings_button.place(x=655, y=50)
 
-                pinned_text_label = ct.CTkLabel(frame, text="Pinned:", font=ct.CTkFont(size=15, family="Inter"), bg_color="transparent", text_color="white")
+                pinned_text_label = ct.CTkLabel(frame, text="Pinned:", font=ct.CTkFont(size=15, family=argonFont), bg_color="transparent", text_color="white")
                 pinned_text_label.place(x=12, y=83)
                 var_name = "self.pinned_var"+str(row_index)
                 pinned_var = ct.StringVar(value="on" if instance_data["pinned"] else "off")
@@ -1914,7 +2025,7 @@ class Argon(ct.CTk):
                 pinned_checkbox = ct.CTkCheckBox(frame,text="", corner_radius=5, fg_color="white", bg_color="#262626", command=lambda name=instance_data["name"], icon=instance_data["icon"], pinD_var=pinned_var, inst_name=instance_name: self.pinInstance(name, icon, pinD_var, inst_name), variable=pinned_var, onvalue="on",offvalue="off", checkbox_height=20, checkbox_width=20)
                 pinned_checkbox.place(x=75, y=85)
 
-                time_label = ct.CTkLabel(frame, text="Played for " +playTime.timeToWords(instance_data["timePlayed"]), font=ct.CTkFont(size=15, family="Inter"), bg_color="transparent", text_color="#b3b3b3")
+                time_label = ct.CTkLabel(frame, text="Played for " +playTime.timeToWords(instance_data["timePlayed"]), font=ct.CTkFont(size=15, family=argonFont), bg_color="transparent", text_color="#b3b3b3")
                 time_label.place(x=580, y=85)
 
                 # Store the frame in the dictionary
@@ -1936,24 +2047,39 @@ class Argon(ct.CTk):
             self.inst.configure(text_color="white" if name == "installations" else "#1a1a1a",fg_color=("#1f6aa5", "#1f6aa5") if name == "installations" else "#c0c0c0", hover_color=("#144870") if name == "installations" else "#b9b9b9")
             self.settings.configure(text_color="white" if name == "settings" else "#1a1a1a",fg_color=("#1f6aa5", "#1f6aa5") if name == "settings" else "#c0c0c0", hover_color=("#144870") if name == "settings" else "#b9b9b9")
             self.account.configure(text_color="white" if name == "account" else "#1a1a1a",fg_color=("#1f6aa5", "#1f6aa5") if name == "account" else "#c0c0c0", hover_color=("#144870") if name == "account" else "#b9b9b9")
+        self.ch_frame.grid_forget()
+        self.inst_frame.grid_forget()
+        self.set_frame.grid_forget()
+        self.acc_frame.grid_forget()
+        
+        
         # show selected frame
         if name == "home":
-            self.ch_frame.grid(row=0, column=1, sticky="nsew")
-        else:
             self.ch_frame.grid_forget()
-            #self.music_frame.grid_forget()
-        if name == "installations":
-            self.inst_frame.grid(row=0, column=1, sticky="nsew")
-        else:
             self.inst_frame.grid_forget()
-        if name == "settings":
-            self.set_frame.grid(row=0, column=1, sticky="nsew")
-        else:
             self.set_frame.grid_forget()
-        if name == "account":
+            self.acc_frame.grid_forget()
+            self.ch_frame.grid(row=0, column=1, sticky="nsew")
+        elif name == "installations":
+            self.ch_frame.grid_forget()
+            self.inst_frame.grid_forget()
+            self.set_frame.grid_forget()
+            self.acc_frame.grid_forget()
+            self.inst_frame.grid(row=0, column=1, sticky="nsew")
+        elif name == "settings":
+            self.ch_frame.grid_forget()
+            self.inst_frame.grid_forget()
+            self.set_frame.grid_forget()
+            self.acc_frame.grid_forget()
+            self.set_frame.grid(row=0, column=1, sticky="nsew")
+        elif name == "account":
+            self.ch_frame.grid_forget()
+            self.inst_frame.grid_forget()
+            self.set_frame.grid_forget()
+            self.acc_frame.grid_forget()
             self.acc_frame.grid(row=0, column=1, sticky="nsew")
         else:
-            self.acc_frame.grid_forget()
+            print("Invalid frame name provided to select_frame()")
 
     def go_to_home(self):
         self.select_frame("home")
@@ -2082,11 +2208,15 @@ class Argon(ct.CTk):
             msg.CTkMessagebox(title="Error", message="You need to be connected to the internet to add an instance.", icon="cancel")
     def addInstance(self):
         self.addInstance_window = ct.CTkToplevel(self)
+        self.addInstance_window.withdraw()
         self.addInstance_window.title("Create new instance")
         self.addInstance_window.geometry("750x300")
         self.addInstance_window.resizable(False, False)
         self.addInstance_window.configure(bg="#262626")
-        self.addInstance_window.after(200, lambda: self.addInstance_window.iconbitmap("img/icon.ico"))
+        if os_name == "Windows":
+            self.addInstance_window.after(200, lambda: self.addInstance_window.iconbitmap("img/icon.ico"))
+        elif os_name == "Linux":
+            pass
         self.addInstance_window.protocol("WM_DELETE_WINDOW", lambda: closeWindow())
         self.addInstance_window.withdraw()
         with open("launcherProfiles.json", "r") as js_read:
@@ -2113,7 +2243,7 @@ class Argon(ct.CTk):
                             hover = "#1a1a1a"
                         self.icon_list.append(icon[f"icon{i}"])
                         self.icon_name = icon[f"icon{i}"]
-                        self.icon_select_btn = ct.CTkButton(self.addInstance_window, text="", image=get_icon_PIL(icon[f"icon{i}"]), font=ct.CTkFont(size=30, family="Inter"), command=lambda icon_name=self.icon_name: chooseIcon(icon_name), height=50, width=50, corner_radius=5, anchor="center", fg_color=fg, bg_color="transparent", hover_color=hover, compound="left", )
+                        self.icon_select_btn = ct.CTkButton(self.addInstance_window, text="", image=get_icon_PIL(icon[f"icon{i}"]), font=ct.CTkFont(size=30, family=argonFont), command=lambda icon_name=self.icon_name: chooseIcon(icon_name), height=50, width=50, corner_radius=5, anchor="center", fg_color=fg, bg_color="transparent", hover_color=hover, compound="left", )
                         if i<=14:
                             self.icon_select_btn.place(x=-25 + (i * 50), y=10)
                         elif i>14:
@@ -2138,7 +2268,7 @@ class Argon(ct.CTk):
                     counter += 1
                     self.icon_list.append(icon[f"icon{i}"])
                     self.icon_name = icon[f"icon{i}"]
-                    self.icon_select_btn = ct.CTkButton(self.addInstance_window, text="", image=get_icon_PIL(icon[f"icon{i}"]), font=ct.CTkFont(size=30, family="Inter"), command=lambda icon_name=self.icon_name: chooseIcon(icon_name), height=50, width=50, corner_radius=5, anchor="center", fg_color="transparent", bg_color="transparent", hover_color="#1a1a1a", compound="left", )
+                    self.icon_select_btn = ct.CTkButton(self.addInstance_window, text="", image=get_icon_PIL(icon[f"icon{i}"]), font=ct.CTkFont(size=30, family=argonFont), command=lambda icon_name=self.icon_name: chooseIcon(icon_name), height=50, width=50, corner_radius=5, anchor="center", fg_color="transparent", bg_color="transparent", hover_color="#1a1a1a", compound="left", )
                     if i<=14:
                         self.icon_select_btn.place(x=-25 + (i * 50), y=10)
                     elif i>14:
@@ -2146,7 +2276,7 @@ class Argon(ct.CTk):
                 else:
                     pass
         name_va1r = ct.StringVar()
-        self.name_entry1 = ct.CTkEntry(self.addInstance_window, placeholder_text="Name...", font=ct.CTkFont(size=25, family="Inter"), width=400, textvariable=name_va1r, placeholder_text_color="#b3b3b3")
+        self.name_entry1 = ct.CTkEntry(self.addInstance_window, placeholder_text="Name...", font=ct.CTkFont(size=25, family=argonFont), width=400, textvariable=name_va1r, placeholder_text_color="#b3b3b3")
         self.name_entry1.place(relx=0.235, rely=0.4)
         method_var = ct.StringVar()
         method_var.set("Vanilla")
@@ -2163,7 +2293,10 @@ class Argon(ct.CTk):
         for version in self.forge_versions_all:
             self.forge_versions.append(version)
         for version in self.fabric_versions_all:
-            self.fabric_versions.append(version["version"])
+            if version["stable"]:
+                self.fabric_versions.append("release" + " " + str(version["version"]))
+            else:
+                self.fabric_versions.append("snapshot" + " "+ str(version["version"]))
         for version in self.installed_versions_all:
             if version["id"] in self.vanilla_vers:
                 self.installed_versions.append("vanilla"+ " " +version["type"] + " " + version["id"])
@@ -2172,7 +2305,12 @@ class Argon(ct.CTk):
                     thing = f"fabric-loader-{loader['version']}-"
                     if thing in version["id"]:
                         new = version["id"].replace(thing, "")
-                        self.installed_versions.append("fabric" + " " + new)
+                        for version in self.fabric_versions_all:
+                            if version["version"] == new:
+                                if version["stable"]:
+                                    self.installed_versions.append("fabric" + " " + "release" + " " + new)
+                                else:
+                                    self.installed_versions.append("fabric" + " " + "snapshot" + " " + new)
                         break
             elif "-forge-" in version["id"]:
                 versionee, loader = version["id"].split("-forge-")
@@ -2202,41 +2340,46 @@ class Argon(ct.CTk):
                 return "Fabric"
         
         def change_version(var):
-            print(var)
             if not var in self.vanilla_versions:
                 if not var in self.forge_versions:
                     if not var in self.fabric_versions:
                         if var.startswith("vanilla"):
-                            var = var.strip("vanilla ")
-                            if not var in self.vanilla_versions:
+                            var2 = var.replace("vanilla ", "")
+                            if not var2 in self.vanilla_versions:
                                 msg.CTkMessagebox(title="Error", message="Invalid version selected.", icon="cancel")
                                 return
                         elif var.startswith("forge"):
-                            var = var.strip("forge ")
-                            if not mc.forge.is_forge_version_valid(var):
+                            var2 = var.replace("forge ", "")
+                            if not mc.forge.is_forge_version_valid(var2):
                                 msg.CTkMessagebox(title="Error", message="Invalid version selected.", icon="cancel")
                                 return
                         elif var.startswith("fabric"):
-                            var = var.strip("fabric ")
-                            if not var in self.fabric_versions:
+                            var2 = var.replace("fabric ", "")
+                            if not var2 in self.fabric_versions:
+                                print(var)
                                 msg.CTkMessagebox(title="Error", message="Invalid version selected.", icon="cancel")
                                 return
+                            
                         else:
                             msg.CTkMessagebox(title="Error", message="Invalid version selected.", icon="cancel")
                             return
             version_var.set(var)
-            self.chosen_version = str(get_version_method(var)+ " " + var)
+            self.chosen_version = str(self.method_dropdown.get()+ " " + var) # Set the chosen version based on the method and version
+
             if var.startswith("release "):
                 self.chosen_version_alone = var.strip("release ")
             elif var.startswith("snapshot "):
                 self.chosen_version_alone = var.strip("snapshot ")
+            elif var.startswith("forge"):
+                self.chosen_version_alone = var.strip("forge ")
             else:
                 self.chosen_version_alone = var
-            print(get_version_method(var),var)
-        self.version_dropdown = ct.CTkComboBox(self.addInstance_window, command=change_version, values=self.vanilla_versions, variable=version_var, font=ct.CTkFont(size=15, family="Inter"), width=200, button_color="#565b5e" if actualTheme == "dark" else "#a3a3a3", bg_color="transparent", button_hover_color="#3c3e41" if actualTheme == "dark" else "#868686", fg_color="#343638" if actualTheme == "dark" else "#868686", hover="#3c3e41" if actualTheme == "dark" else "#868686")
+            print(self.method_dropdown.get(),var)
+        self.version_dropdown = ct.CTkComboBox(self.addInstance_window, command=change_version, values=self.vanilla_versions, variable=version_var, font=ct.CTkFont(size=15, family=argonFont), width=200, button_color="#565b5e" if actualTheme == "dark" else "#a3a3a3", bg_color="transparent", button_hover_color="#3c3e41" if actualTheme == "dark" else "#868686", fg_color="#343638" if actualTheme == "dark" else "#868686", hover="#3c3e41" if actualTheme == "dark" else "#868686")
         self.version_dropdown.place(x=295, rely=0.55)
         self.version_dropdown.bind("<Return>", lambda event: change_version(version_var.get()))
-        CTkScrollableDropdown(self.version_dropdown, values=self.vanilla_versions, justify="left", frame_corner_radius=5, command=change_version)
+        if os_name == "Windows":
+            CTkScrollableDropdown(self.version_dropdown, values=self.vanilla_versions, justify="left", frame_corner_radius=5, command=change_version)
         def checkInstalled():
             isinstalled = False
             print(self.chosen_version_alone)
@@ -2254,11 +2397,10 @@ class Argon(ct.CTk):
             else:
                 print("Not installed")
                 self.handle_download(self.chosen_version)
-        self.install_btn = ct.CTkButton(self.addInstance_window, text="Install", font=ct.CTkFont(size=15, family="Inter"), command=checkInstalled, corner_radius=5, anchor="center", width=60)
+        self.install_btn = ct.CTkButton(self.addInstance_window, text="Install", font=ct.CTkFont(size=15, family=argonFont), command=checkInstalled, corner_radius=5, anchor="center", width=60)
         self.install_btn.place(x=515, rely=0.55)
         def method_change(var):
             print(var)
-            self.version_dropdown.destroy()
             if var == "Vanilla":
                 version_var.set(self.vanilla_versions[0])
                 self.chosen_version = str("Vanilla " + self.vanilla_versions[0])
@@ -2267,28 +2409,28 @@ class Argon(ct.CTk):
                 elif self.vanilla_versions[0].startswith("snapshot "):
                     self.chosen_version_alone = self.vanilla_versions[0].strip("snapshot ")
                 self.version_dropdown.configure(values=self.vanilla_versions)
-                self.version_dropdown.place(x=295, rely=0.55)
                 self.version_dropdown.bind("<Return>", lambda event: change_version(version_var.get()))
                 self.install_btn.place(x=515, rely=0.55)
-                CTkScrollableDropdown(self.version_dropdown, values=self.vanilla_versions, justify="left", frame_corner_radius=5, command=change_version)
+                if os_name == "Windows":
+                    CTkScrollableDropdown(self.version_dropdown, values=self.vanilla_versions, justify="left", frame_corner_radius=5, command=change_version)
             elif var == "Forge":
                 version_var.set(self.forge_versions[0])
                 self.chosen_version = str("Forge " + self.forge_versions[0])
                 self.chosen_version_alone = self.forge_versions[0]
                 self.version_dropdown.configure(values=self.forge_versions)
-                self.version_dropdown.place(x=295, rely=0.55)
                 self.version_dropdown.bind("<Return>", lambda event: change_version(version_var.get()))
                 self.install_btn.place(x=515, rely=0.55)
-                CTkScrollableDropdown(self.version_dropdown, values=self.forge_versions, justify="left", frame_corner_radius=5, command=change_version)
+                if os_name == "Windows":
+                    CTkScrollableDropdown(self.version_dropdown, values=self.forge_versions, justify="left", frame_corner_radius=5, command=change_version)
             elif var == "Fabric":
                 version_var.set(self.fabric_versions[0])
                 self.chosen_version = str("Fabric " + self.fabric_versions[0])
                 self.chosen_version_alone = self.fabric_versions[0]
                 self.version_dropdown.configure(values=self.fabric_versions)
-                self.version_dropdown.place(x=295, rely=0.55)
                 self.version_dropdown.bind("<Return>", lambda event: change_version(version_var.get()))
                 self.install_btn.place(x=515, rely=0.55)
-                CTkScrollableDropdown(self.version_dropdown, values=self.fabric_versions, justify="left", frame_corner_radius=5, command=change_version)
+                if os_name == "Windows":
+                    CTkScrollableDropdown(self.version_dropdown, values=self.fabric_versions, justify="left", frame_corner_radius=5, command=change_version)
             elif var == "Installed":
                 version_var.set(self.installed_versions[0])
                 self.chosen_version = str("Installed " + self.installed_versions[0])
@@ -2297,8 +2439,9 @@ class Argon(ct.CTk):
                 self.version_dropdown.place(x=295, rely=0.55)
                 self.version_dropdown.bind("<Return>", lambda event: change_version(version_var.get()))
                 self.install_btn.place_forget()
-                CTkScrollableDropdown(self.version_dropdown, values=self.installed_versions, justify="left", frame_corner_radius=5, command=change_version)
-        self.method_dropdown = ct.CTkOptionMenu(self.addInstance_window,variable=method_var, font=ct.CTkFont(size=15, family="Inter"), values=["Vanilla", "Forge", "Fabric", "Installed"], width=100, button_color="#565b5e" if actualTheme == "dark" else "#a3a3a3", bg_color="transparent", button_hover_color="#3c3e41" if actualTheme == "dark" else "#868686", fg_color="#343638" if actualTheme == "dark" else "#868686", hover="#3c3e41" if actualTheme == "dark" else "#868686", command=method_change)
+                if os_name == "Windows":
+                    CTkScrollableDropdown(self.version_dropdown, values=self.installed_versions, justify="left", frame_corner_radius=5, command=change_version)
+        self.method_dropdown = ct.CTkOptionMenu(self.addInstance_window,variable=method_var, font=ct.CTkFont(size=15, family=argonFont), values=["Vanilla", "Forge", "Fabric", "Installed"], width=100, button_color="#565b5e" if actualTheme == "dark" else "#a3a3a3", bg_color="transparent", button_hover_color="#3c3e41" if actualTheme == "dark" else "#868686", fg_color="#343638" if actualTheme == "dark" else "#868686", hover="#3c3e41" if actualTheme == "dark" else "#868686", command=method_change)
         self.method_dropdown.place(x=175, rely=0.55)
         namevar = self.name_entry1.get()
 
@@ -2307,14 +2450,15 @@ class Argon(ct.CTk):
             self.addInstance_window.withdraw()
 
         
-        self.addinstance_btn = ct.CTkButton(self.addInstance_window, text="Add Instance", font=ct.CTkFont(size=15, family="Inter"), command=lambda: self.addinstance_fr(name=self.name_entry1.get(), version=self.chosen_version, icon=self.chosen_icon), corner_radius=5, anchor="center", width=120)
+        self.addinstance_btn = ct.CTkButton(self.addInstance_window, text="Add Instance", font=ct.CTkFont(size=15, family=argonFont), command=lambda: self.addinstance_fr(name=self.name_entry1.get(), version=self.chosen_version, icon=self.chosen_icon), corner_radius=5, anchor="center", width=120)
         self.addinstance_btn.place(x=300, rely=0.75)
 
         
         #CTkScrollableDropdown(self.method_dropdown, values=["Vanilla", "Forge", "Fabric"], justify="left", frame_corner_radius=5, command=method_change)
     def addinstance_fr(self, name, version, icon):
         name = name.lstrip()
-        print(name, version, icon)
+        #print(name, version, icon)
+        print(version, "version")
         if icon == None:
             msg.CTkMessagebox(title="Error", message="Please choose all values.", icon="cancel")
             return
@@ -2347,11 +2491,14 @@ class Argon(ct.CTk):
             os.chdir("instances/"+name)
             os.mkdir("mods")
             os.chdir(currn_dir)
-            version = version.partition(" ")[2]
+            full_ver = version.partition(" ")[2]
+            version = full_ver.split(" ")[1]
             method = "fabric"
-            typee = "release"
+            typee = full_ver.split(" ")[0]
         elif version.startswith("Installed"):
             ver2 = version.strip("Installed ")
+
+            print("Toffee for you mon ami:", ver2)
             if ver2.startswith("vanilla"):
                 method = "vanilla"
                 version = version.partition(" ")[2]
@@ -2369,9 +2516,10 @@ class Argon(ct.CTk):
                 os.chdir("instances/"+name)
                 os.mkdir("mods")
                 os.chdir(currn_dir)
-                version = version.partition(" ")[2]
+                full_ver = ver2.partition(" ")[2]
+                version = full_ver.split(" ")[1]
                 method = "fabric"
-                typee = "release"
+                typee = full_ver.split(" ")[0]
 
             elif ver2.startswith("forge"):
                 os.mkdir("instances/"+name)
@@ -2379,6 +2527,8 @@ class Argon(ct.CTk):
                 os.mkdir("mods")
                 os.chdir(currn_dir)
                 version = version.partition(" ")[2]
+                version = version.strip("forge ")
+                print("Forge version:", version)
                 method = "forge"
                 typee = "release"
 
@@ -2443,28 +2593,29 @@ class Argon(ct.CTk):
         bar = fill * filledLength + '-' * (length - filledLength)
 
         self.install_progress.set(float(percent) / 100)
-        print(f'\r{prefix} |{bar}| {percent}% {suffix}', end=printEnd)
+        print(f'\r{prefix}', end=printEnd)
         # Print New Line on Complete
         if iteration == total:
             print()
 
     def install_mc_window(self, version):
         self.install_window = ct.CTkToplevel(self)
-        self.install_window.title(f"Downloading Minecraft {version}")
-        self.install_window.geometry("500x200")
+        self.install_window.title(f"Argon")
+        self.install_window.geometry("500x100")
         self.install_window.resizable(False, False)
         self.install_window.configure(bg="#262626")
         def disable_event():
             pass
         self.install_window.protocol("WM_DELETE_WINDOW", disable_event)
-        self.install_window.after(200, lambda: self.install_window.iconbitmap(currn_dir+"\\"+"img\icon.ico"))
-        self.install_window.grab_set()
-        self.install_label = ct.CTkLabel(self.install_window, text=f"Installing Minecraft {version}", font=ct.CTkFont(size=15, family="Inter", weight="bold"), bg_color="transparent")
-        self.install_label.place(x=20, y=20)
+        if os_name == "Windows":
+            self.install_window.after(200, lambda: self.install_window.iconbitmap(currn_dir+r"\\"+r"img\icon.ico"))
+            self.install_window.grab_set()
+        self.install_label = ct.CTkLabel(self.install_window, text=f"Downloading Minecraft {version}", font=ct.CTkFont(size=15, family=argonFont, weight="bold"), bg_color="transparent")
+        self.install_label.place(x=17, y=20, anchor="w")
         self.install_progress = ct.CTkProgressBar(self.install_window, width=400, height=30, corner_radius=5, mode="determinate",progress_color="#1f6aa5")
-        self.install_progress.place(x=50, y=100)
-        self.cancel_btn = ct.CTkButton(self.install_window, text="Stop Download", font=ct.CTkFont(size=15, family="Inter"), command=self.stop_download, corner_radius=5, anchor="center", width=60)
-        self.cancel_btn.place(x=200, y=150)
+        self.install_progress.place(x=17, y=60,anchor="w")
+        #self.cancel_btn = ct.CTkButton(self.install_window, text="Stop Download", font=ct.CTkFont(size=15, family=argonFont), command=self.stop_download, corner_radius=5, anchor="center", width=60)
+        #self.cancel_btn.place(x=200, y=150)
 
     def stop_download(self):
         '''restores the minimized original window and cancels the download.'''
@@ -2500,43 +2651,98 @@ class Argon(ct.CTk):
                 new_string_list = split_string[1:]
                 new_string = ' '.join(new_string_list)
                 version = new_string
-            print(f"Installing Minecraft {version}")
-            mc.install.install_minecraft_version(version, mc_dir, callback=self.callback)
+            print(f"Downloading Minecraft {version}")
+            try:
+                mc.install.install_minecraft_version(version, mc_dir, callback=self.callback)
+            except Exception as e:
+                print(f"Error installing Minecraft version {version}: {e}")
+                msg.CTkMessagebox(title="Error", message=f"Failed to install Minecraft version {version}. Please check the logs for more details.", icon="cancel")
+                self.install_window.destroy()
+                return
         elif version.startswith("Forge") or version.startswith("forge"):
             version = version.partition(" ")[2]
 
             if supports_automatic_install(version):
-                print(f"Installing Minecraft Forge {version}")
-                install_forge_version(version, mc_dir, callback=self.callback)
+                print(f"Downloading Minecraft forge {version}")
+                try:
+                    install_forge_version(version, mc_dir, callback=self.callback)
+                except Exception as e:
+                    print(f"Error installing Forge version {version}: {e}")
+                    msg.CTkMessagebox(title="Error", message=f"Failed to install Forge version {version}. Please check the logs for more details.", icon="cancel")
+                    self.install_window.destroy()
+                    return
+                    
 
             else:
-                run_forge_installer(version)
+                try:
+                    run_forge_installer(version)
+                except Exception as e:
+                    print(f"Error running Forge installer for version {version}: {e}")
+                    msg.CTkMessagebox(title="Error", message=f"Failed to run Forge installer for version {version}. Please check the logs for more details.", icon="cancel")
+                    self.install_window.destroy()
+                    return
 
         elif version.startswith("Fabric") or version.startswith("fabric"):
             version = version.partition(" ")[2]
-            print(f"Installing Minecraft Fabric {version}")
-            install_fabric(version, mc_dir, callback=self.callback)
+            version = version.strip("release ") if version.startswith("release") else version.strip("snapshot ")
+            print(f"Downloading Minecraft fabric {version}")
+            try:
+                install_fabric(version, mc_dir, callback=self.callback)
+            except Exception as e:
+                print(f"Error installing Fabric version {version}: {e}")
+                msg.CTkMessagebox(title="Error", message=f"Failed to install Fabric version {version}. Please check the logs for more details.", icon="cancel")
+                self.install_window.destroy()
+                return
 
 
         self.install_window.destroy()
-        msg.CTkMessagebox(title="Installation complete", message=f"Minecraft {og_version} has been installed successfully.", icon="info")
             
             
             
+    def check_installed(self, version_prompt):
+        installed_versions = mc.utils.get_installed_versions(mc_dir)
+        for version in installed_versions:
+            versionee = version_prompt
+            if versionee.startswith("vanilla"):
+                versionee = versionee.strip("vanilla ")
+                if versionee.startswith("release"):
+                    versionee = versionee.strip("release ")
+                elif versionee.startswith("snapshot"):
+                    versionee = versionee.strip("snapshot ")
+                if versionee == version["id"]:
+                    return True
+            elif versionee.startswith("fabric"):
+                versionee = versionee.removeprefix("fabric ")
+                if versionee.startswith("release"):
+                    versionee = versionee.strip("release ")
+                elif versionee.startswith("snapshot"):
+                    versionee = versionee.strip("snapshot ")
+                if "fabric-loader-" in version["id"] and f"{versionee}" in version["id"]:
+                    return True
+            elif versionee.startswith("forge"):
+                versionee = versionee.removeprefix("forge ")
+                if versionee.startswith("release"):
+                    versionee = versionee.strip("release ")
+                elif versionee.startswith("snapshot"):
+                    versionee = versionee.strip("snapshot ")
+                actualVersion, loader = versionee.split("-")
+                if "-forge-" in version["id"] and f"{actualVersion}" in version["id"]:
+                    return True
 
+    def isInstalled(self, prompt):
+        if self.check_installed(prompt) == True:
+            return True
+        else:
+            return False
 
     def runMinecraft(self):
         '''
-        for version in installed_versions:
-            if selected_ver.startswith("vanilla"):
-                if not version2 == version["id"]:
-                    print("Not installed")
-            elif selected_ver.startswith("fabric"):
-                if not f"fabric-loader-{mc.fabric.get_latest_loader_version}-{version2}" == version["id"]:
-                    print("Not installed")
-            elif selected_ver.startswith("forge"):
+        if self.isInstalled(data["selected-version"]) == False:
+            message = msg.CTkMessagebox(title="Error", message="This version is not downloaded. Would you like to download it?", icon="cancel", option_1="No", option_2="Yes")
+            if message.get() == "Yes":
+                self.handle_download(data["selected-version"])
+            else:
                 pass'''
-                    
         '''Creates the thread on which minecraft is running'''
         self.t4 = Thread(target=self.launch_mc)
         self.t4.start()
@@ -2549,7 +2755,8 @@ class Argon(ct.CTk):
             self.after(100, lambda: self.monitor_mc(self.t4))
         else:
             t4.join(timeout=3.0)
-            RPC.update(state=f"In the launcher", large_image="large", small_image="small", large_text="launcher")
+            if discordConnected == True:
+                RPC.update(state=f"In the launcher", large_image="large", small_image="small", large_text="launcher")
             os.chdir(currn_dir)
             self.deiconify()
 
@@ -2567,7 +2774,8 @@ class Argon(ct.CTk):
         self.login_method = auth_type
         self.detected_ver = ""
         self.runtime_ver = data["selected-version"]
-        RPC.update(state=f"Playing Minecraft {self.runtime_ver}", large_image="large", small_image="small", large_text="Minecraft")
+        if discordConnected == True:
+            RPC.update(state=f"Playing Minecraft {self.runtime_ver}", large_image="large", small_image="small", large_text="Minecraft")
 
         with open("settings.json", "r") as js_read1:
             self.s1 = js_read1.read()
@@ -2838,7 +3046,10 @@ class Argon(ct.CTk):
                 try:
                     self.mc_ver = data["selected-version"].strip("forge release ")
                     parts = self.mc_ver.split('-')
+                    
                     self.detected_ver1 = f"{parts[0]}-forge-{parts[1]}"
+                    if len(parts) < 2:
+                        self.detected_ver1 = self.mc_ver
                     
                     refresh_token = data["Microsoft-settings"][0]["refresh_token"]
                     self.options = {
@@ -2849,7 +3060,10 @@ class Argon(ct.CTk):
                         "executablePath": javaPath,
                     }
                     selected_instance = data["selected-instance"]
-                    selected_instanceDIR = currn_dir + "\\instances\\" + selected_instance + "\\mods"
+                    if os_name == "Windows":
+                        selected_instanceDIR = currn_dir + "\\instances\\" + selected_instance + "\\mods"
+                    else:
+                        selected_instanceDIR = currn_dir + "/instances/" + selected_instance + "/mods"
                     instanceHasMods = False
                     if mods.Manager.doesInstanceHaveMods(selected_instanceDIR):
                         instanceHasMods = True
@@ -2922,7 +3136,10 @@ class Argon(ct.CTk):
                         "executablePath": javaPath,
                     }
                     selected_instance = data["selected-instance"]
-                    selected_instanceDIR = currn_dir + "\\instances\\" + selected_instance + "\\mods"
+                    if os_name == "Windows":
+                        selected_instanceDIR = currn_dir + "\\instances\\" + selected_instance + "\\mods"
+                    else:
+                        selected_instanceDIR = currn_dir + "/instances/" + selected_instance + "/mods"
                     instanceHasMods = False
                     if mods.Manager.doesInstanceHaveMods(selected_instanceDIR):
                         instanceHasMods = True
@@ -3003,7 +3220,10 @@ class Argon(ct.CTk):
                     parts = self.mc_ver.split('-')
                     self.detected_ver1 = f"{parts[0]}-forge-{parts[1]}"
                     selected_instance = data["selected-instance"]
-                    selected_instanceDIR = currn_dir + "\\instances\\" + selected_instance + "\\mods"
+                    if os_name == "Windows":
+                        selected_instanceDIR = currn_dir + "\\instances\\" + selected_instance + "\\mods"
+                    else:
+                        selected_instanceDIR = currn_dir + "/instances/" + selected_instance + "/mods"
                     if mods.Manager.doesInstanceHaveMods(selected_instanceDIR):
                         instanceHasMods = True
                         print("Transferring mods from instance to Minecraft")
@@ -3072,8 +3292,7 @@ class Argon(ct.CTk):
                         self.detected_ver = self.mc_ver.strip("release ")
                     elif self.mc_ver.startswith("snapshot"):
                         self.detected_ver = self.mc_ver.partition(' ')[2]
-
-                    self.v1 = self.detected_ver[:6]
+                    self.v1 = self.detected_ver 
                     self.detected_ver2 = f"fabric-loader-{self.lv}-{self.v1}"
                     
                     refresh_token = data["Microsoft-settings"][0]["refresh_token"]
@@ -3085,7 +3304,10 @@ class Argon(ct.CTk):
                         "executablePath": javaPath,
                     }
                     selected_instance = str(data["selected-instance"])
-                    selected_instanceDIR = currn_dir + "\\instances\\" + selected_instance + "\\mods" #A bug that really irritated me so i had to specify this stuff
+                    if os_name == "Windows":
+                        selected_instanceDIR = currn_dir + "\\instances\\" + selected_instance + "\\mods"
+                    else:
+                        selected_instanceDIR = currn_dir + "/instances/" + selected_instance + "/mods" 
                     instanceHasMods = False
                     if mods.Manager.doesInstanceHaveMods(selected_instanceDIR):
                         instanceHasMods = True
@@ -3155,7 +3377,7 @@ class Argon(ct.CTk):
                     elif self.mc_ver.startswith("snapshot"):
                         self.detected_ver = self.mc_ver.partition(' ')[2]
 
-                    self.v1 = self.detected_ver[:6]
+                    self.v1 = self.detected_ver
                     self.detected_ver2 = f"fabric-loader-{self.lv}-{self.v1}"
                     
                     self.options = {
@@ -3166,7 +3388,10 @@ class Argon(ct.CTk):
                         "executablePath": javaPath,
                     }
                     selected_instance = data["selected-instance"]
-                    selected_instanceDIR = currn_dir + "\\instances\\" + selected_instance + "\\mods"
+                    if os_name == "Windows":
+                        selected_instanceDIR = currn_dir + "\\instances\\" + selected_instance + "\\mods"
+                    else:
+                        selected_instanceDIR = currn_dir + "/instances/" + selected_instance + "/mods"
                     instanceHasMods = False
                     if mods.Manager.doesInstanceHaveMods(selected_instanceDIR):
                         instanceHasMods = True
@@ -3250,10 +3475,13 @@ class Argon(ct.CTk):
                     elif self.mc_ver.startswith("snapshot"):
                         self.detected_ver = self.mc_ver.partition(' ')[2]
 
-                    self.v1 = self.detected_ver[:6]
+                    self.v1 = self.detected_ver
                     self.detected_ver2 = f"fabric-loader-{self.lv}-{self.v1}"
                     selected_instance = data["selected-instance"]
-                    selected_instanceDIR = currn_dir + "\\instances\\" + selected_instance + "\\mods"
+                    if os_name == "Windows":
+                        selected_instanceDIR = currn_dir + "\\instances\\" + selected_instance + "\\mods"
+                    else:
+                        selected_instanceDIR = currn_dir + "/instances/" + selected_instance + "/mods"
                     instanceHasMods = False
                     if mods.Manager.doesInstanceHaveMods(selected_instanceDIR):
                         instanceHasMods = True
@@ -3320,13 +3548,16 @@ class Argon(ct.CTk):
         self.error_window.geometry("500x510")
         self.error_window.resizable(False, False)
         self.error_window.configure(bg="#262626")
-        self.error_window.after(200, lambda: self.error_window.iconbitmap("img/icon.ico"))
+        if os_name == "Windows":
+            self.error_window.after(200, lambda: self.error_window.iconbitmap("img/icon.ico"))
+        elif os_name == "Linux":
+            pass
         self.error_window.grab_set()
         
         self.scrollableTextBox = ct.CTkFrame(self.error_window, corner_radius=10, height=440, width=475, fg_color="#2b2b2b", bg_color="transparent")
         self.scrollableTextBox.place(relx=0.5, rely=0.46, anchor="center")
         
-        self.crash_report_text = ct.CTkTextbox(self.scrollableTextBox, text_color="white", font=ct.CTkFont(size=15, family="Inter"), fg_color="#2b2b2b", width=400, height=400, bg_color="transparent", corner_radius=10)
+        self.crash_report_text = ct.CTkTextbox(self.scrollableTextBox, text_color="white", font=ct.CTkFont(size=15, family=argonFont), fg_color="#2b2b2b", width=400, height=400, bg_color="transparent", corner_radius=10)
         self.crash_report_text.insert("0.0",crash_report)
         self.crash_report_text.place(x=10, y=10)
         def hideFullLog():
@@ -3340,11 +3571,11 @@ class Argon(ct.CTk):
             self.clipboard_clear()
             self.clipboard_append(text)
             self.update()
-        self.closeWindow = ct.CTkButton(self.error_window, text="Close", font=ct.CTkFont(size=15, family="Inter"), command=self.error_window.destroy, height=30, width=80, corner_radius=5, anchor="center")
+        self.closeWindow = ct.CTkButton(self.error_window, text="Close", font=ct.CTkFont(size=15, family=argonFont), command=self.error_window.destroy, height=30, width=80, corner_radius=5, anchor="center")
         self.closeWindow.place(x=390, y=470)
-        self.showFullLog_btn = ct.CTkButton(self.error_window, text="Show Full Log", font=ct.CTkFont(size=15, family="Inter"), command=showFullLog, height=30, width=120, corner_radius=5, anchor="center")
+        self.showFullLog_btn = ct.CTkButton(self.error_window, text="Show Full Log", font=ct.CTkFont(size=15, family=argonFont), command=showFullLog, height=30, width=120, corner_radius=5, anchor="center")
         self.showFullLog_btn.place(x=250, y=470)
-        self.copyLog_btn = ct.CTkButton(self.error_window, text="Copy Log", font=ct.CTkFont(size=15, family="Inter"), command=lambda: self.copyToClipboard(minecraft_log), height=30, width=80, corner_radius=5, anchor="center")
+        self.copyLog_btn = ct.CTkButton(self.error_window, text="Copy Log", font=ct.CTkFont(size=15, family=argonFont), command=lambda: self.copyToClipboard(minecraft_log), height=30, width=80, corner_radius=5, anchor="center")
         self.copyLog_btn.place(x=20, y=470)
     def ely_authenticate(self):
         '''Connects to ely.by for user authorization'''
@@ -3441,7 +3672,7 @@ class SplashScreen(ct.CTk):
         pywinstyles.set_opacity(self.logo_label, color="#a9a9a9")
 
         
-        self.name_label = ct.CTkLabel(self, text="Argon", font=ct.CTkFont(size=100, family="Inter", weight="bold"), bg_color=bg_var, text_color=color_var)
+        self.name_label = ct.CTkLabel(self, text="Argon", font=ct.CTkFont(size=100, family=argonFont, weight="bold"), bg_color=bg_var, text_color=color_var)
         self.name_label.place(x=160, y=65)
 
         pywinstyles.set_opacity(self.name_label, color=bg_var)

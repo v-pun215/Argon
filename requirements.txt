@@ -7,9 +7,9 @@ Pillow
 imagehash
 pywinstyles
 psutil
-pywin32
 winshell
 pypresence
 pyqt6
 PyQt6-WebEngine
 pywebview
+CTkMessagebox

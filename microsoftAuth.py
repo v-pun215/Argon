@@ -4,9 +4,9 @@ from PyQt6.QtWebEngineCore import QWebEngineProfile
 from PyQt6.QtCore import QUrl, QLocale
 import minecraft_launcher_lib
 import json
-import sys
+import sys, requests
 import os
-from keys import secret, client
+from keys import client
 
 
 redirect = "https://eclient-done.vercel.app/"
@@ -57,8 +57,16 @@ class LoginWindow(QWebEngineView):
         try:
             # Get the code from the url
             auth_code = minecraft_launcher_lib.microsoft_account.parse_auth_code_url(url.toString(), self.state)
+            print("Recieved auth code: "+auth_code)
             # Do the login
-            account_information = minecraft_launcher_lib.microsoft_account.complete_login(client, secret, redirect, auth_code, self.code_verifier)
+            response = requests.post("https://argon-auth.vpun215.hackclub.app/complete_login", json={
+                "auth_code": auth_code,
+                "code_verifier": self.code_verifier
+            })
+            print("Recieved from auth: "+response.text)
+
+            account_information = response.json()
+
             # Show the login information
             data["Microsoft-settings"][0]["refresh_token"] = account_information["refresh_token"]
             data["User-info"][0]["AUTH_TYPE"] = "Microsoft"
@@ -90,6 +98,11 @@ class LoginWindow(QWebEngineView):
         message_box.setText("You have successfully logged in, {}".format(information_dict["name"]))
         message_box.setStandardButtons(QMessageBox.StandardButton.Ok)
         message_box.exec()
+
+        # Close the window
+        self.destroy()
+        # Start the launcher
+        
         
 
 def Authenticate():
