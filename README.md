@@ -4,7 +4,8 @@
 
 A feature-rich, mod-supporting, Minecraft Launcher built in Python.
 
-![image](https://github.com/user-attachments/assets/56f69b69-4be2-425a-9a3e-1a04110a4ab0)
+![image](https://github.com/user-attachments/assets/0b6a811e-ae9b-4e07-9d70-6ad376eeb180)
+
 
 
 # PSA
@@ -28,13 +29,12 @@ Using the installer, it will automatically download and install these dependenci
  - To start Argon, run main.py or python main.py
 
 # Planned Features
- - Multi-OS support (Linux, macOS)
  - More bug free and stable experience
  - A non-verbose mode (ie. the terminal is not shown)
 
 # Features
  - Supports Vanilla, Forge and Fabric ✅
- - Runs on Windows 10+ 🪟
+ - Runs on Windows, macOS and Linux 💻
  - Supports modding through Modrinth (interface built-in) 🟩
  - Seperate instances of different versions with their own respective mods (kind of like MultiMC, but not quite) 🎉
  - Log in methods: Microsoft, ElyBy, and Offline (cracked) ☘️
@@ -47,31 +47,24 @@ Using the installer, it will automatically download and install these dependenci
  - [CTkScrollableDropdown](https://github.com/Akascape/CTkScrollableDropdown) (included in source code)
 
 #  Screenshots
- - Welcome screen
-![image](https://github.com/user-attachments/assets/286dd267-018e-4690-a5b6-15dd0017780f)
+ - Welcome/Sign In page
+![image](https://github.com/user-attachments/assets/ec138c54-3833-402e-bf66-53547db3d9d2)
+
 
  - Home
-![image](https://github.com/user-attachments/assets/e451c0d9-c213-4ad9-8341-17feb89d069b)
+![image](https://github.com/user-attachments/assets/ed129612-51a7-464e-a50f-715d8dd421e2)
+
 
  - Instances
-![image](https://github.com/user-attachments/assets/6a517667-f87a-478f-8ff0-34617fe707e8)
-
-
- - Instance Settings
-
-![image](https://github.com/user-attachments/assets/222c1c1f-d9d1-4920-aa26-891c237e5766)
-
-
- - Instance Mods
-
-![image](https://github.com/user-attachments/assets/5d6458ca-5e67-423e-9211-8541798f188d)
+![image](https://github.com/user-attachments/assets/c04d64a8-e621-44d0-a314-bd3f22fc7aac)
 
 
  - Settings
-![image](https://github.com/user-attachments/assets/a9f25c1e-5c19-4d63-b030-fb71d35fb8d9)
+![image](https://github.com/user-attachments/assets/e2840d2e-9a98-4912-907e-809d72409634)
 
  - Account
-![image](https://github.com/user-attachments/assets/237690ee-56c5-4524-8cca-50b56287643a)
+![image](https://github.com/user-attachments/assets/d7ab0e52-a46c-4ee9-bbbc-aea6b07977a2)
+
 
 # ⛔ Disclaimer
 Argon is in no way affiliated with Mojang Studios, nor should it be considered a project endorsed by Mojang Studios.
