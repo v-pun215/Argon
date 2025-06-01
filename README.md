@@ -13,7 +13,6 @@ This branch contains **prebuilt binaries** for the Argon, intended for use by th
 
 - `Argon.dmg` – A drag-and-drop install of Argon's shortcut app.
 - `ArgonInstaller.exe` – Font installer for Windows ([FontReg](https://github.com/jason-jxc/FontReg))
-- `ArgonInstaller.app` - macOS installer
 - `Release builds of Argon` - These are downloaded and installed by Argon's installers.
 - Other platform-specific builds (coming soon)
 
