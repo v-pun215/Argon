@@ -41,7 +41,9 @@ As of v1.4, the macOS installer is in beta, and requires a Python installation (
 # Planned Features
  - A bug free and stable experience
  - A terminal free mode
- - TLauncher skinsystem compatibility
+ - Manual JAR mods installation and config (eg. Optifine, Forge, Fabric, etc)
+ - Code optimization
+ - Better ElyBy experience
  - NeoForge and Quilt support
  - Built in Resource-pack and shader manager
  - 
