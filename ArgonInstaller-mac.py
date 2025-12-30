@@ -11,14 +11,30 @@ The installer does these things:
 8. creates a app shortcut to the main.py file
 
 '''
+import subprocess, sys, os
+def which_python3():
+    try:
+        result = subprocess.run(["which", "python3"], capture_output=True, text=True, check=True)
+        path = result.stdout.strip()
+        return path
+    except subprocess.CalledProcessError:
+        return None
+
+def is_homebrew_python3():
+    path = which_python3()
+    if path:
+        return "/opt/homebrew" in path or "/usr/local" in path
+    return False
+
+path = which_python3()
+print("`which python3` ->", path)
+
+
 
 try:
-    import customtkinter as ct
-    import PIL, tkinter
+    import PIL
     import wget
     import zipfile
-    from CTkMessagebox import CTkMessagebox
-    import subprocess, sys, os
     from pathlib import Path
     import psutil
     import minecraft_launcher_lib
@@ -26,20 +42,38 @@ try:
     import pwd
 except ImportError as e:
     import os
-    requirements = "customtkinter, PIL, wget, requests, CTkMessagebox, psutil, minecraft_launcher_lib"
+    currn_dir = os.getcwd()
+    file_name = os.path.basename(__file__)
+    requirements = "customtkinter pillow wget CTkMessagebox psutil minecraft-launcher-lib"
+    if is_homebrew_python3():
+        print("Please run the installer using ArgonMac.sh.")
+        sys.exit(1)
     os.system(f"pip3 install {requirements}")
-    os.execvp("python3", ["python3", "installer_macos.py"])
+    os.chdir(currn_dir)
+    os.execvp("python3", ["python3", file_name])
 
+
+
+file_nameInstaller = os.path.basename(__file__)
+try:
+    import customtkinter as ct
+    import tkinter
+    from CTkMessagebox import CTkMessagebox
+except ImportError as e:
+    print("error occured:", e)
+    __import__('subprocess').run(['brew', 'install', 'python-tk'], check=True)
+    print("installed")
+    os.execvp("python3", ["python3", file_nameInstaller])
 argonFont = ""
 
 # download assets
 if not os.path.exists("img"):
     os.makedirs("img")
-wget.download(url="https://argon-release.vercel.app/img/hello.png", out="img/hello.png")
-wget.download(url="https://argon-release.vercel.app/img/mac.png", out="img/mac.png")
-wget.download(url="https://argon-release.vercel.app/img/mac.icns", out="img/mac.icns")
-# download LICENSE file
-wget.download(url="https://argon-release.vercel.app/LICENSE", out="LICENSE")
+    wget.download(url="https://argon-release.vercel.app/img/hello.png", out="img/hello.png")
+    wget.download(url="https://argon-release.vercel.app/img/mac.png", out="img/mac.png")
+    wget.download(url="https://argon-release.vercel.app/img/mac.icns", out="img/mac.icns")
+    # download LICENSE file
+    wget.download(url="https://argon-release.vercel.app/LICENSE", out="LICENSE")
 # EXE
 def resource_path(relative_path):
     try:
@@ -50,7 +84,7 @@ def resource_path(relative_path):
     return os.path.join(base_path, relative_path)    
 
 
-version = "v1.4"
+version = "v1.4.1"
 
 
 
@@ -206,6 +240,7 @@ class ArgonInstaller(ct.CTk):
         self.title1.place(relx=0.5, rely=0.2, anchor="center")
 
         def exitee():
+            os.chdir(currn_dir)
             import shutil
             shutil.rmtree("img/")
             os.remove("LICENSE")
@@ -336,12 +371,15 @@ class ArgonInstaller(ct.CTk):
             os.makedirs(install_dir)
         
         os.chdir(install_dir)
+        os.system("python3 -m venv argonenv")
+        os.system("source argonenv/bin/activate")
+        
         # Check Java Installation
         if not is_java:
             CTkMessagebox(title="Java not found", message="Java is not installed on your Mac. Please install Java 21 to continue.", icon="cancel")
             self.destroy()
             return
-        # Python
+        # Python :skull:
         if not self.check_python_installed():
             message = CTkMessagebox(title="Python not found", message="Python is not installed on your Mac. Please install Python 3.10 or higher to continue.", icon="cancel")
             self.destroy()
@@ -361,7 +399,7 @@ class ArgonInstaller(ct.CTk):
 
         # Install dependencies
         self.status_label.configure(text="Installing Python dependencies")
-        os.system(f"pip3 install -r requirements.txt")
+        os.system(f"argonenv/bin/pip install -r requirements.txt")
 
         # Add a file in the root directory to store the install location
         os.chdir(f"/users/{usr_accnt}")
@@ -370,9 +408,8 @@ class ArgonInstaller(ct.CTk):
 
         # Create a shortcut to the main.py file
         os.chdir(install_dir)
-        if version >= "v1.4":
-            wget.download(url="https://argon-release.vercel.app/macos/Argon.dmg", out="Argon.dmg")
-            self.mount_dmg("Argon.dmg")
+        wget.download(url="https://argon-release.vercel.app/macos/Argon.dmg", out="Argon.dmg")
+        self.mount_dmg("Argon.dmg")
 
         self.progress.stop()
         self.next_page(5)

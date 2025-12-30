@@ -1,23 +1,22 @@
 # Argon, v-pun215
-# Please star this repository if you like it! :D
 import os
 import platform
 os_name = platform.system()
 from tkinter import PhotoImage
 import customtkinter as ct
-from PIL import Image, ImageTk
+from PIL import Image
 if not os_name == "Linux" and not os_name == "Darwin":
     from ctypes import windll, byref, sizeof, c_int
+    import pywinstyles
 import ctypes
 import random
 import urllib.request
 import json, datetime
+from datetime import timezone
 import threading
 import time
-import io, os
+import io
 import re as regex
-if not os_name == "Linux" and not os_name == "Darwin":
-    import pywinstyles
 import psutil
 import getpass
 import requests
@@ -27,12 +26,11 @@ import minecraft_launcher_lib as mc
 from minecraft_launcher_lib.forge import install_forge_version, run_forge_installer, supports_automatic_install
 from minecraft_launcher_lib.fabric import install_fabric, get_all_minecraft_versions, get_stable_minecraft_versions, get_latest_loader_version
 import uuid
-import CTkMessagebox as msg # type: ignore (My VSCode is cooked fr)
+import CTkMessagebox as msg
 import wget
-from elySkinRenderer import render_skin, render_iso_skin
-from mcNewsParser import get_json_file
+import elySkinRenderer
+from mcNewsParser import get_news_list
 from xml.dom.minidom import parse
-import xml.dom.minidom, os, subprocess
 import webbrowser
 import functools
 from pathlib import Path
@@ -40,43 +38,18 @@ from checkSkinChange import checkChangeSkin
 from threading import Thread
 from CTkScrollableDropdown import *
 import mods
-import os
-currn_dir = os.getcwd()
 from pypresence import Presence
 import shutil
-
-
-if os_name == "Windows":
-    if not os.path.exists(r"{}/settings.json".format(currn_dir)):
-        subprocess.Popen(["python", "signin.py"])
-        sys.exit()
-    else:
-        pass
-elif os_name == "Linux" or os_name == "Darwin":
-    if not os.path.exists(r"settings.json"):
-        print("settings.json not found, creating one...")
-        subprocess.Popen(["python3", "signin.py"])
-        sys.exit()
-    
-    # Check if the settings.json file has useless data
-    with open("settings.json", "r") as js_read:
-        s = js_read.read()
-        s = s.replace('\t','')  #Trailing commas in dict cause file read problems, these lines will fix it.
-        s = s.replace('\n','')
-        s = s.replace(',}','}')
-        s = s.replace(',]',']')
-        settings_data = json.loads(s)
-
-
-    if settings_data["User-info"][0]["username"] == None:
-        print("settings.json is empty, creating a new one...")
-        os.remove("settings.json")
-        os.remove("launcherProfiles.json")
-        subprocess.Popen(["python3", "signin.py"])
-        sys.exit()
-
-# Dear code viewer, how was your day? :D
 import playTime
+import updater
+import keys
+
+if not os.path.exists("settings.json"):
+    subprocess.Popen(["python", "signin.py"])
+    sys.exit()
+
+backend = "https://argon-auth.onrender.com/"
+
 def check_internet(url='https://www.google.com', timeout=5):
     '''
     Checks if the internet is connected or not.
@@ -90,47 +63,26 @@ def check_internet(url='https://www.google.com', timeout=5):
 
     except requests.exceptions.Timeout:
         return False
-connected = check_internet()
-def prin(text):
-    print(text)
 
-starttime = time.time()
+connected = check_internet()
 
 '''Argon Metadata'''
-author = "v-pun215"
-version = "1.4"
-description = "A feature-rich minecraft launcher built in Python."
-''''''
 
-if platform.system() == 'Darwin':
-    from Foundation import NSBundle
-    bundle = NSBundle.mainBundle()
-    if bundle:
-        info = bundle.localizedInfoDictionary() or bundle.infoDictionary()
-        if info and info['CFBundleName'] == 'Python':
-            info['CFBundleName'] = "Argon"
-            info['CFBundleVersion'] = version
-            info['CFBundleShortVersionString'] = version
-            info['CFBundleIdentifier'] = f'com.vpun215.argon'
-            info['CFBundleExecutable'] = 'Argon'
-            info['CFBundleIconFile'] = 'img/macicon.icns'
-            info['CFBundleGetInfoString'] = 'Argon v{version}, © 2025 v-pun215'
-            info['CFBundleLongVersionString'] = 'Argon v{version}, © 2025 v-pun215'
-            info['NSHumanReadableCopyright'] = '© 2025 v-pun215'
+with open("metadata.json", "r") as metadata_file:
+    metadata = json.load(metadata_file)
 
-'''Font'''
+author = metadata.get("author", "")
+version = metadata.get("version", "")
+description = metadata.get("description", "")
+
 argonFont = "Inter"
 
 if os_name == "Darwin":
     argonFont = ""
 
-
-'''Some api keys. YOU ARE NOT allowed to use them.'''
 if connected == True:
     import keys
     mcNewsHeaders = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36'}
-
-
     re = "https://eclient-done.vercel.app/"
     discordClient = keys.discordClient
 else:
@@ -140,66 +92,41 @@ else:
     re = "https://eclient-done.vercel.app/"
     discordClient = ""
 
-
-
 currn_dir = os.getcwd()
 usr_accnt = str(Path.home()).replace("\\", "/").split("/")[-1]
-mc_dir = r"C:\\users\\{}\\AppData\\Roaming\\.minecraft".format(usr_accnt)
 svmem = psutil.virtual_memory()
 
-
-
-
-ct.set_default_color_theme("blue")  # Themes: "blue" (standard), "green", "dark-blue"
-myappid = u'vpun215.argon.release.2.0' # arbitrary string
-if not os_name == "Linux" and not os_name == "Darwin":
-    ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
-print(r'''
- $$$$$$\                                          
-$$  __$$\                                         
-$$ /  $$ | $$$$$$\   $$$$$$\   $$$$$$\  $$$$$$$\  
-$$$$$$$$ |$$  __$$\ $$  __$$\ $$  __$$\ $$  __$$\ 
-$$  __$$ |$$ |  \__|$$ /  $$ |$$ /  $$ |$$ |  $$ |
-$$ |  $$ |$$ |      $$ |  $$ |$$ |  $$ |$$ |  $$ |
-$$ |  $$ |$$ |      \$$$$$$$ |\$$$$$$  |$$ |  $$ |
-\__|  \__|\__|       \____$$ | \______/ \__|  \__|
-                    $$\   $$ |                    
-                    \$$$$$$  |                    
-                     \______/                     
-      ''') # ASCII Art! (you like it?)
-print("")
-print("Welcome to Argon, a feature-rich Minecraft launcher built in Python.")
-print("Version: ", version)
-print("-------------------------------------------------")
-
 with open("settings.json", "r") as js_read:
-    s = js_read.read()
-    s = s.replace('\t','')  #Trailing commas in dict cause file read problems, these lines will fix it.
-    s = s.replace('\n','')  #Found this on stackoverflow.
-    s = s.replace(',}','}') #shasankp000 the goat!
-    s = s.replace(',]',']')
-    data = json.loads(s)
-    #print(json.dumps(data, indent=4,))
+    data = json.load(js_read)
 
-full_os_name = data["PC-info"][0]["OS"]
+# Shortcuts
+user_info = data["User-info"][0]
+pc_info = data["PC-info"][0]
+settings = data["settings"][0]
+ms_settings = data["Microsoft-settings"][0]
+
+# Extracted values
+full_os_name = pc_info["OS"]
 mc_home = data["Minecraft-home"]
-username = data["User-info"][0]["username"]
-cracked_password = data["User-info"][0]["cracked_password"]
-uid = data["User-info"][0]["UUID"]
+username = user_info["username"]
+cracked_password = user_info["cracked_password"]
+uid = user_info["UUID"]
+auth_type = user_info["AUTH_TYPE"]
 accessToken = data["accessToken"]
-mc_dir = data["Minecraft-home"]
-auth_type = data["User-info"][0]["AUTH_TYPE"]
+refresh_token = ms_settings["refresh_token"]
 selected_ver = data["selected-version"]
 selected_inst = data["selected-instance"]
-allocated_ram = data["settings"][0]["allocated_ram"]
-jvm_args = data["settings"][0]["jvm-args"]
-javaPath = data["settings"][0]["executablePath"]
-ramlimiterExceptionBypassed = data["settings"][0]["ramlimiterExceptionBypassed"]
-ramlimiterExceptionBypassedSelected = data["settings"][0]["ramlimiterExceptionBypassedSelected"]
-verbose = data["settings"][0]["verbose"]
-refresh_token = data["Microsoft-settings"][0]["refresh_token"]
-customBackground = data["settings"][0]["customBackground"]
-theme = data["settings"][0]["theme"]
+allocated_ram = settings["allocated_ram"]
+jvm_args = settings["jvm-args"]
+javaPath = settings["executablePath"]
+ramlimiterExceptionBypassed = settings["ramlimiterExceptionBypassed"]
+ramlimiterExceptionBypassedSelected = settings["ramlimiterExceptionBypassedSelected"]
+verbose = settings["verbose"]
+customBackground = settings["customBackground"]
+theme = settings["theme"]
+last_refresh = ms_settings["last_refresh"]
+
+# Auto theme detection
 def detect_darkmode_in_windows(): 
     try:
         import winreg
@@ -228,87 +155,23 @@ if theme == "System":
         else:
             actualTheme = "light"
     elif os_name == "Linux":
-        actualTheme = "dark" # Argon is written to support Dark Mode FIRST and then Light Mode, hence it is default if system theme is undetectable.
+        actualTheme = "dark"
     elif os_name == "Darwin":
         import darkdetect
         if darkdetect.isDark():
             actualTheme = "dark"
         else:
             actualTheme = "light"
-    print(actualTheme)
 else:
     actualTheme = theme.lower()
-ct.set_appearance_mode(actualTheme)
-def reload_data():
-    global mc_home
-    global username
-    global uid
-    global full_os_name
-    global mc_dir
-    global selected_ver
-    global ramlimiterExceptionBypassed
-    global verbose
-    global ramlimiterExceptionBypassedSelected
-    global auth_type
-    global jvm_args
-    global allocated_ram
-    global accessToken
-    global refresh_token
-    global cracked_password
-
-    with open("settings.json", "r") as js_read:
-        s = js_read.read()
-        s = s.replace('\t','')  #Trailing commas in dict cause file read problems, these lines will fix it.
-        s = s.replace('\n','')  #Found this on stackoverflow.
-        s = s.replace(',}','}')
-        s = s.replace(',]',']')
-        data = json.loads(s)
-        #print(json.dumps(data, indent=4,))
-
-    full_os_name = data["PC-info"][0]["OS"]
-    mc_home = data["Minecraft-home"]
-    username = data["User-info"][0]["username"]
-    cracked_password = data["User-info"][0]["cracked_password"]
-    uid = data["User-info"][0]["UUID"]
-    accessToken = data["accessToken"]
-    mc_dir = data["Minecraft-home"]
-    auth_type = data["User-info"][0]["AUTH_TYPE"]
-    selected_ver = data["selected-version"]
-    selected_inst = data["selected-instance"]
-    allocated_ram = data["settings"][0]["allocated_ram"]
-    jvm_args = data["settings"][0]["jvm-args"]
-    javaPath = data["settings"][0]["executablePath"]
-    ramlimiterExceptionBypassed = data["settings"][0]["ramlimiterExceptionBypassed"]
-    ramlimiterExceptionBypassedSelected = data["settings"][0]["ramlimiterExceptionBypassedSelected"]
-    verbose = data["settings"][0]["verbose"]
-    refresh_token = data["Microsoft-settings"][0]["refresh_token"]
-    customBackground = data["settings"][0]["customBackground"]
-    theme = data["settings"][0]["theme"]
 
 
-if os_name == "Windows":
-    if os.path.exists(r"C:/Users/{}/AppData/Roaming/.minecraft".format(usr_accnt)):
-        print("Existing minecraft installation, checking for versions...")
-
-    else:
-        os.mkdir(r"C:/Users/{}/AppData/Roaming/.minecraft".format(usr_accnt))
-        os.chdir(r"C:/Users/{}/AppData/Roaming/.minecraft".format(usr_accnt))
-        os.mkdir("versions")
-elif os_name == "Linux":
-    if os.path.exists(r"/home/{}/.minecraft".format(usr_accnt)):
-        print("Existing minecraft installation, checking for versions...")
-
-    else:
-        os.mkdir(r"/home/{}/.minecraft".format(usr_accnt))
-        os.chdir(r"/home/{}/.minecraft".format(usr_accnt))
-        os.mkdir("versions")
 
 
 class Argon(ct.CTk):
     def __init__(self):
         global connected
         connected = check_internet()
-        super().__init__()
         self.search_list = None
         self.is_loading = True
         global mc_home
@@ -326,7 +189,105 @@ class Argon(ct.CTk):
         global accessToken
         global refresh_token
         global cracked_password
+        super().__init__()
+        ct.set_default_color_theme("blue")
+        ct.set_appearance_mode(actualTheme)
+        starttime = time.time()
+        if os_name == "Windows":
+            if not os.path.exists("settings.json"):
+                print("settings.json not found, creating one...")
+                subprocess.Popen(["python", "signin.py"])
+                sys.exit()
+
+            # Check if the settings.json file has useless data
+            with open("settings.json", "r") as js_read:
+                s = js_read.read()
+                s = s.replace('\t','')  
+                s = s.replace('\n','')
+                s = s.replace(',}','}')
+                s = s.replace(',]',']')
+                settings_data = json.loads(s)
+
+
+            if settings_data["User-info"][0]["username"] == None:
+                print("settings.json is empty, creating a new one...")
+                os.remove("settings.json")
+                os.remove("launcherProfiles.json")
+                subprocess.Popen(["python3", "signin.py"])
+                sys.exit()
+
+        elif os_name == "Linux" or os_name == "Darwin":
+            if not os.path.exists("settings.json"):
+                print("settings.json not found, creating one...")
+                subprocess.Popen(["python3", "signin.py"])
+                sys.exit()
+            
+            # Check if the settings.json file has useless data
+            with open("settings.json", "r") as js_read:
+                s = js_read.read()
+                s = s.replace('\t','')  
+                s = s.replace('\n','')
+                s = s.replace(',}','}')
+                s = s.replace(',]',']')
+                settings_data = json.loads(s)
+
+
+            if settings_data["User-info"][0]["username"] == None:
+                print("settings.json is empty, creating a new one...")
+                os.remove("settings.json")
+                os.remove("launcherProfiles.json")
+                subprocess.Popen(["python3", "signin.py"])
+                sys.exit()
+        
+        
+        if platform.system() == 'Darwin':
+            from Foundation import NSBundle
+            bundle = NSBundle.mainBundle()
+            if bundle:
+                info = bundle.localizedInfoDictionary() or bundle.infoDictionary()
+                if info and info['CFBundleName'] == 'Python':
+                    info['CFBundleName'] = "Argon"
+                    info['CFBundleVersion'] = version
+                    info['CFBundleShortVersionString'] = version
+                    info['CFBundleIdentifier'] = f'com.vpun215.argon'
+                    info['CFBundleExecutable'] = 'Argon'
+                    info['CFBundleIconFile'] = 'img/macicon.icns'
+                    info['CFBundleGetInfoString'] = 'Argon v{version}, © 2025 v-pun215'
+                    info['CFBundleLongVersionString'] = 'Argon v{version}, © 2025 v-pun215'
+                    info['NSHumanReadableCopyright'] = '© 2025 v-pun215'
+        myappid = u'vpun215.argon.release.1.5' # arbitrary string
+        if not os_name == "Linux" and not os_name == "Darwin":
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
+        print(r'''
+        $$$$$$\                                          
+        $$  __$$\                                         
+        $$ /  $$ | $$$$$$\   $$$$$$\   $$$$$$\  $$$$$$$\  
+        $$$$$$$$ |$$  __$$\ $$  __$$\ $$  __$$\ $$  __$$\ 
+        $$  __$$ |$$ |  \__|$$ /  $$ |$$ /  $$ |$$ |  $$ |
+        $$ |  $$ |$$ |      $$ |  $$ |$$ |  $$ |$$ |  $$ |
+        $$ |  $$ |$$ |      \$$$$$$$ |\$$$$$$  |$$ |  $$ |
+        \__|  \__|\__|       \____$$ | \______/ \__|  \__|
+                            $$\   $$ |                    
+                            \$$$$$$  |                    
+                            \______/                     
+            ''') # ASCII Art! (you like it? >_<)
+        print("")
+        print("Welcome to Argon, a feature-rich Minecraft launcher built in Python.")
+        print("Version: ", version)
+        print("-------------------------------------------------")
+
+        mc_dir = mc.utils.get_minecraft_directory()
+
+        # Ensure the directory and versions subfolder exist
+        versions_dir = os.path.join(mc_dir, "versions")
+        os.makedirs(versions_dir, exist_ok=True)
+        print("Minecraft directory is ready:", mc_dir)
+
+        self.search_list = None
+        self.is_loading = True
         self.title("Argon")
+        connected = check_internet()
+
         self.geometry(f"{1024}x{600}")
         if os_name == "Windows":
             var_name = currn_dir.replace("\\", "/") + "/"
@@ -337,6 +298,7 @@ class Argon(ct.CTk):
         elif os_name == "Darwin":
             icon = PhotoImage(file="img/mac.png")
             self.iconphoto(False, icon)
+        
         self.resizable(False, False)
 
         self.grid_columnconfigure(1, weight=1)
@@ -347,7 +309,7 @@ class Argon(ct.CTk):
             print("Connected to the internet successfully.")
         else:
             # Checks if the internet is connected again
-            connected == check_internet()
+            connected = check_internet()
             if connected == True:
                 print("Connected to the internet successfully.")
             else:
@@ -355,19 +317,22 @@ class Argon(ct.CTk):
                 connected = False
 
 
-        ''' Connect to Discord RPC '''
+        # Discord Presence
         global RPC
         global discordConnected
         if connected == True:
             try:
+                print("Connecting to Discord RPC...")
                 RPC = Presence("1331607427547660340") 
                 RPC.connect()
                 discordConnected = True
+                print("Discord RPC connected")
             except Exception as e:
                 print(e)
                 print("Discord not found running, not connecting to RPC.")
                 discordConnected = False
-        
+        else:
+            discordConnected = False
 
         if discordConnected == True:
             RPC.update(state="In the launcher", large_image="large", small_image="small", large_text="launcher")
@@ -408,7 +373,7 @@ class Argon(ct.CTk):
                 if value is var:
                     return name
             return None
-        # When I wrote this code, only me and God understood it. Now, only god knows.
+
         self.pinned1 = get_pinned_inst(data["pinned-instances"][0]["pinned1"])
         self.pinned2 = get_pinned_inst(data["pinned-instances"][0]["pinned2"])
         self.pinned3 = get_pinned_inst(data["pinned-instances"][0]["pinned3"])
@@ -481,96 +446,152 @@ class Argon(ct.CTk):
             except Exception as e:
                 print(f"An error occurred: {e}")
                 return []
+        
+
         if connected == True:
+            print("Fetching available versions...")
             self.available_versions = mc.utils.get_version_list()
-            forge_versions = get_latest_forge_versions()
-            self.forge_versions_all = []
-            for mc_version, full_version in forge_versions:
-                self.forge_versions_all.append(full_version)
-            self.fabric_versions_all = mc.fabric.get_all_minecraft_versions()
+            print("Done")
+            try:
+                forge_versions = get_latest_forge_versions()
+                self.forge_versions_all = [full_version for mc_version, full_version in forge_versions]
+            except Exception as e:
+                print(f"Failed to fetch Forge versions: {e}")
+                self.forge_versions_all = []
+            
+            # Fetch Fabric versions with retry logic
+            try:
+                self.fabric_versions_all = mc.fabric.get_all_minecraft_versions()
+            except Exception as e:
+                print(f"Failed to fetch Fabric versions: {e}")
+                self.fabric_versions_all = []
+            print("donee")
         else:
             self.available_versions = []
             self.forge_versions_all = []
             self.fabric_versions_all = []
         # Microsoft Authentication
         if auth_type == "Microsoft":
-            if connected == True:
-                try:
-                    response = requests.post("https://argon-auth.vpun215.hackclub.app/complete_refresh", json={
-                        "refresh_token": refresh_token,
-                    })
-                    account_informaton = response.json()
-                    global msaoptions
-                    msaoptions = {
-                        "username": account_informaton["name"],
-                        "uuid": account_informaton["id"],
-                        "token": account_informaton["access_token"],
-                    }
-                    username = msaoptions["username"]
-                    uid = msaoptions["uuid"]
-                    accessToken = msaoptions["token"]
-                    auth_type = "Microsoft"
-                    print("Logged in as: ", username)
-                    if not os.path.exists(f"img/user/{username}.png"):
-                        print("Downloading head image...")
-                        os.chdir("img/user")
-                        wget.download(f"https://crafatar.com/renders/head/{uid}?overlay" , f"{username}.png")
-                        os.chdir(currn_dir)
+            time_now = datetime.datetime.now(timezone.utc)
+            last_refresh_dt = datetime.datetime.fromisoformat(
+                    last_refresh.replace("Z", "+00:00")
+            ).astimezone(datetime.timezone.utc)
+            # if more than 23 hours since last_refresh, refresh token
+            elapsed = time_now - last_refresh_dt
+            print("LAST REFRESH RAW:", last_refresh)
+            print("PARSED:", last_refresh_dt.isoformat())
+            print("NOW:", time_now.isoformat())
+            print("ELAPSED HOURS:", elapsed.total_seconds() / 3600)
 
-                    elif checkChangeSkin(f"https://crafatar.com/renders/head/{uid}?overlay", f"img/user/{username}.png") == True:
-                        print("Skin has changed, re-rendering skin...")
-                        os.remove(f"img/user/{username}.png")
-                        os.chdir("img/user")
-                        wget.download(f"https://crafatar.com/renders/head/{uid}?overlay", f"{username}.png")
-                        os.chdir(currn_dir)
-                    else:
-                        print("Head image already exists, and is same as on server.")
-                        pass
-                    
+            if elapsed >= datetime.timedelta(hours=23):
+
+                if connected == True:
+                    try:
+                        print("Refreshing Microsoft Account...")
+                        response = requests.post(f"{backend}/complete_refresh", json={
+                            "refresh_token": refresh_token,
+                        })
+                        account_informaton = response.json()
+                        global msaoptions
+                        msaoptions = {
+                            "username": account_informaton["name"],
+                            "uuid": account_informaton["id"],
+                            "token": account_informaton["access_token"],
+                        }
+                        username = msaoptions["username"]
+                        uid = msaoptions["uuid"]
+                        accessToken = msaoptions["token"]
 
 
-                # Show the window if the refresh token is invalid
-                except mc.exceptions.InvalidRefreshToken:
-                    if connected == True:
-                        msg.CTkMessagebox(title="Microsoft Account", message="Unable to refresh Microsoft Account. Please login again.", icon="warning")
-                        subprocess.Popen(["python", "signin.py"])
-                    else:
-                        msg.CTkMessagebox(title="Error", message=" Your Microsoft Account is unreachable due to no internet access. You will be able to play only using offline mode.", icon="cancel")
-                        auth_type = "Offline"
+                        auth_type = "Microsoft"
+                        print("Welcome back", username)
+
+                        if not os.path.exists(f"img/user/{username}.png"):
+                            print("Downloading head image...")
+                            os.chdir("img/user")
+                            wget.download(f"https://nmsr.nickac.dev/head/{username}" , f"{username}.png")
+                            os.chdir(currn_dir)
+
+                        elif checkChangeSkin(f"https://nmsr.nickac.dev/head/{username}", f"img/user/{username}.png") == True:
+                            print("Skin has changed, re-rendering skin...")
+                            os.remove(f"img/user/{username}.png")
+                            os.chdir("img/user")
+                            wget.download(f"https://nmsr.nickac.dev/head/{username}", f"{username}.png")
+                            os.chdir(currn_dir)
+                        else:
+                            print("Head image already exists, and is same as on server.")
+
+                        now_iso = datetime.datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+                        with open("settings.json", 'r') as f:
+                            data = json.load(f)
+                        data["Microsoft-settings"][0]["last_refresh"] = now_iso
+                        data["accessToken"] = accessToken
+                        data["User-info"][0]["username"] = username
+                        data["User-info"][0]["UUID"] = uid
+                        with open("settings.json", 'w') as f:
+                            json.dump(data, f, indent=4)
+                        
+
+
+                    # Show the window if the refresh token is invalid
+                    except mc.exceptions.InvalidRefreshToken:
+                        if connected == True:
+                            msg.CTkMessagebox(title="Microsoft Account", message="Unable to refresh Microsoft Account. Please login again.", icon="warning")
+                            subprocess.Popen(["python3", "signin.py"])
+                        else:
+                            msg.CTkMessagebox(title="Error", message=" Your Microsoft Account is unreachable due to no internet access. You will be able to play only using offline mode.", icon="cancel")
+                            auth_type = "Offline"
+                else:
+                    auth_type = "Offline"
+                    print("[OFFLINE] Logged in as: ", username)
             else:
-                auth_type = "Offline"
-                print("[OFFLINE] Logged in as: ", username)
+                print("Microsoft Account already logged in")
+
+                msaoptions = {
+                    "username": username,
+                    "uuid": uid,
+                    "token": accessToken,
+                }
 
         elif auth_type == "ElyBy":
             if connected == True:
+                if not os.path.exists("authlib/"):
+                    os.mkdir("authlib")
+                    os.chdir("authlib")
+                    wget.download("https://github.com/yushijinhun/authlib-injector/releases/download/v1.2.7/authlib-injector-1.2.7.jar")
+                else:
+                    if not os.listdir("authlib"):
+                        os.chdir("authlib")
+                        wget.download("https://github.com/yushijinhun/authlib-injector/releases/download/v1.2.7/authlib-injector-1.2.7.jar")
+                os.chdir(currn_dir)
+
+
                 self.ely_authenticate()
                 print("[ElyBy] Logged in as:", username)
                 if not os.path.exists(f"img/user/ely-{username}-raw-skin.png"):
                     wget.download(f"http://skinsystem.ely.by/skins/{username}.png", f"img/user/ely-{username}-raw-skin.png")
                     print("[ElyBy] Downloaded skin of:", username)
                     print("[ElyBy] Rendering skin of:", username)
-                    render_skin(f"img/user/ely-{username}-raw-skin.png")
-                    print("[ElyVy] Rendered skin")
-
-
+                    elySkinRenderer.render_head(f"img/user/ely-{username}-raw-skin.png")
+                    print("[ElyBy] Rendered head")
                 
                 elif checkChangeSkin(f"http://skinsystem.ely.by/skins/{username}.png", f"img/user/ely-{username}-raw-skin.png") == True:
                     print("[ElyBy] Skin has changed, re-rendering skin...")
                     os.remove(f"img/user/ely-{username}.png")
                     os.remove(f"img/user/ely-{username}-raw-skin.png")
                     wget.download(f"http://skinsystem.ely.by/skins/{username}.png", f"img/user/ely-{username}-raw-skin.png")
-                    render_skin(f"img/user/ely-{username}-raw-skin.png")
-                    print("[ElyBy] Rendered skin")
+                    elySkinRenderer.render_head(f"img/user/ely-{username}-raw-skin.png")
+                    print("[ElyBy] Rendered head")
                 else:
                     pass
                 if not os.path.exists(f"img/user/ely-{username}-skin.png"):
-                    render_iso_skin(f"img/user/ely-{username}-raw-skin.png")
-                    print("[ElyBy] Rendered iso skin")
+                    elySkinRenderer.render_body(f"img/user/ely-{username}-raw-skin.png")
+                    print("[ElyBy] Rendered fullbody skin")
                 elif checkChangeSkin(f"http://skinsystem.ely.by/skins/{username}.png", f"img/user/ely-{username}-raw-skin.png") == True:
-                    print("[ElyBy] Skin has changed, re-rendering iso skin...")
+                    print("[ElyBy] Skin has changed, re-rendering fullbody skin...")
                     os.remove(f"img/user/ely-{username}-skin.png")
-                    render_iso_skin(f"img/user/ely-{username}-raw-skin.png")
-                    print("[ElyBy] Rendered iso skin")
+                    elySkinRenderer.render_body(f"img/user/ely-{username}-raw-skin.png")
+                    print("[ElyBy] Rendered fullbody skin")
                 else:
                     pass
 
@@ -580,12 +601,7 @@ class Argon(ct.CTk):
         
         elif auth_type == "Offline":
             print("[OFFLINE] Logged in as: ", username)
-        if connected == True:
-            print("Loading instances...")
-            self.addInstance()
-            print("Loaded instances")
-        else:
-            pass
+        self.addInstance()
 
         if auth_type == "Microsoft":
             self.username_head_img = Image.open(f"img/user/{username}.png")
@@ -638,8 +654,8 @@ class Argon(ct.CTk):
             ltvers = mc.utils.get_latest_version()
         else:
             ltvers = {
-                'release': "1.21.4",
-                'snapshot': "25w04a"
+                'release': "1.21.8",
+                'snapshot': "25w31a"
             }
         latestRelease = f"vanilla release {ltvers['release']}"
         latestSnapshot = f"vanilla snapshot {ltvers['snapshot']}"
@@ -740,7 +756,6 @@ class Argon(ct.CTk):
 
             row_counter += 1'''
 
-
         # Home
         self.ch_frame = ct.CTkFrame(self, corner_radius=0, height=600, fg_color="transparent")
         self.ch_frame.grid(row=0, column=1, sticky="nsew")
@@ -760,47 +775,10 @@ class Argon(ct.CTk):
         #self.ch_label.place(x=275, y=30)
         self.logo_img = ct.CTkImage(light_image=Image.open("img/argon.png"), dark_image=Image.open("img/argon.png"), size=(300, 100))
         self.logo_label = ct.CTkLabel(self.ch_frame, text="",image=self.logo_img, bg_color="#000001" if customBG == True else "transparent")
-        self.logo_label.place(relx=0.5, rely=0.2, anchor="center")
+        self.logo_label.place(relx=0.5, rely=0.12, anchor="center")
         if customBG:
             pywinstyles.set_opacity(self.logo_label, color="#000001")
-        # Statistics Frame
-        self.stat_frame = ct.CTkFrame(self.ch_frame, corner_radius=10, height=300,width=600, bg_color="#000001" if customBG == True else "transparent")
-        self.stat_frame.place(relx=0.5, rely=0.6, anchor="center")
-        if customBG:
-            pywinstyles.set_opacity(self.stat_frame, color="#000001")
-        curnTime = datetime.datetime.now()
-        if curnTime.hour < 12:
-            greeting = "Good morning"
-        elif 12<= curnTime.hour < 18:
-            greeting = "Good afternoon"
-        else:
-            greeting = "Good evening"
-        self.greeting = ct.CTkLabel(self.stat_frame, text=greeting+", "+ username + ".", font=ct.CTkFont(size=30, weight="bold", family=argonFont), bg_color="transparent", anchor="center")
-        self.greeting.place(relx=0.03, rely=0.1, anchor="w")
-
-        #self.news_buttn = ct.CTkButton(self.stat_frame, text="Minecraft News", font=ct.CTkFont(size=15, family=argonFont), height=30, width=120, corner_radius=5, anchor="w", fg_color="#212121", bg_color="transparent", hover_color="#1a1a1a")
-        #self.news_buttn.place(relx=0.75, rely=0.1, anchor="w")
-
-        self.time_frame = ct.CTkFrame(self.stat_frame, corner_radius=10, height=220, width=570, bg_color="transparent")
-        self.time_frame.place(relx=0.5, rely=0.5675, anchor="center")
-
-        self.title_of_tf = ct.CTkLabel(self.time_frame, text="Total Time Played", font=ct.CTkFont(size=20, weight="bold", family=argonFont), bg_color="transparent")
-        self.title_of_tf.place(relx=0.025, rely=0.1, anchor="w")
-        self.time_img = ct.CTkImage(light_image=Image.open("img/clock.png"), dark_image=Image.open("img/clock.png"), size=(30, 30))
-        self.time_img_label = ct.CTkLabel(self.time_frame, text="", image=self.time_img, bg_color="transparent", corner_radius=5)
-        self.time_img_label.place(relx=0.025, rely=0.25, anchor="w")
-        self.time_label = ct.CTkLabel(self.time_frame, text=playTime.fancyTimeToWords(playTime.getTotalTimePlayed()), font=ct.CTkFont(size=27, family=argonFont), bg_color="transparent")
-        self.time_label.place(relx=0.1, rely=0.25, anchor="w")
-
-        self.title_of_tf = ct.CTkLabel(self.time_frame, text="Favorite Instance", font=ct.CTkFont(size=20, weight="bold", family=argonFont), bg_color="transparent")     
-        self.title_of_tf.place(relx=0.025, rely=0.55, anchor="w")   
-
-        self.fav_img = ct.CTkImage(light_image=Image.open("img/instance_icons/"+playTime.getFavInstIcon()+".png"), dark_image=Image.open("img/instance_icons/"+playTime.getFavInstIcon()+".png"), size=(30, 30))
-        self.fav_img_label = ct.CTkLabel(self.time_frame, text="", image=self.fav_img, bg_color="transparent", corner_radius=5)
-        self.fav_img_label.place(relx=0.025, rely=0.7, anchor="w")
-
-        self.fav_inst_label = ct.CTkLabel(self.time_frame, text=playTime.getFavInstance(), font=ct.CTkFont(size=27, family=argonFont), bg_color="transparent")
-        self.fav_inst_label.place(relx=0.1, rely=0.7, anchor="w")
+        
         ''' Another update...
         def switchMuFra():
             self.ch_frame.grid_forget()
@@ -808,58 +786,129 @@ class Argon(ct.CTk):
         self.music_btn = ct.CTkButton(self.stat_frame, text="Play Music", image=self.spot_img, font=ct.CTkFont(size=15, family=argonFont), height=30, width=120, corner_radius=5, anchor="center", fg_color="#212121", bg_color="transparent", hover_color="#1a1a1a", command=switchMuFra)
         self.music_btn.place(relx=0.75, rely=0.1, anchor="w")'''
 
-        ''' This is the news frame. I have removed it because the RSS provided by Minecraft has been taken down. This is in protest ig (also to reduce loading time)
-        self.news_frame = ct.CTkFrame(self.ch_frame, corner_radius=10, height=450,width=850, bg_color="transparent")
-        self.news_frame.place(relx=0.501, rely=0.595, anchor="center")
-        try:
-            get_json_file()
-            with open("mcNewsletter.json", "r") as js_read:
-                raw = json.loads(js_read.read())
-            news = raw["entries"]
-            counter = 0
-            def open_url(url):
-                webbrowser.open(url)
-            print("Loading Minecraft Changelog... (this may take some time)")
-            def short(text, max_length):
-                if len(text) > max_length:
-                    return text[:max_length - 3] + "..."
-                else:
-                    return text
-            for new in news:
-                title = short(new["title"], 40)
-                description = short(new["text"], 72)
-                imageURL = new["playPageImage"]["url"]
-                guid = new["readMoreLink"]
-                pubDate = new["date"]
-                var_name = "self.news"+str(counter)+"_frame"
-                globals()[var_name] = ct.CTkFrame(self.news_frame, corner_radius=5, height=100,width=780,fg_color="#262626", bg_color="transparent")
-                globals()[var_name].grid(row=counter, column=0, sticky="nsew", pady=7, padx=7)
-                var_name2 = "self.news"+str(counter)+"_img"
-                globals()[var_name2] = ct.CTkImage(light_image=Image.open(requests.get("https://launchercontent.mojang.com"+str(imageURL), stream=True,headers=mcNewsHeaders).raw), dark_image=Image.open(requests.get("https://launchercontent.mojang.com"+str(imageURL), stream=True, headers=mcNewsHeaders).raw), size=(80, 80))
-                var_name3 = "self.news"+str(counter)+"_img_label"
-                globals()[var_name3] = ct.CTkLabel(globals()[var_name], text="", image=globals()[var_name2], bg_color="transparent", corner_radius=5)
-                globals()[var_name3].place(x=5, y=10)
-                var_name4 = "self.news"+str(counter)+"_title"
-                globals()[var_name4] = ct.CTkLabel(globals()[var_name], text=title, font=ct.CTkFont(size=25, weight="bold", family=argonFont),text_color="white", bg_color="transparent")
-                globals()[var_name4].place(x=110, y=10)
-                var_name5 = "self.news"+str(counter)+"_description"
-                globals()[var_name5] = ct.CTkLabel(globals()[var_name], text=description, font=ct.CTkFont(size=15, family=argonFont),text_color="#b3b3b3", bg_color="transparent")
-                globals()[var_name5].place(x=110, y=60)
-                var_name6 = "self.news"+str(counter)+"_readmore"
-                globals()[var_name6] = ct.CTkButton(globals()[var_name], text="Read More", font=ct.CTkFont(size=15, family=argonFont), command=functools.partial(open_url, guid), height=30, width=80, corner_radius=5, anchor="w", fg_color="transparent", bg_color="#262626", hover_color="#1a1a1a")
-                globals()[var_name6].place(x=680, y=60)
-                var_name7 = "self.news"+str(counter)+"_date"
-                globals()[var_name7] = ct.CTkLabel(globals()[var_name], text=str(pubDate), font=ct.CTkFont(size=15, family=argonFont),text_color="#b3b3b3", bg_color="transparent")
-                globals()[var_name7].place(x=680, y=10)
-                if counter == 3:
-                    break
-                else:
-                    counter = counter+1
-        except Exception as e:
-            os.execv(sys.argv[0], sys.argv)
-        '''
         
+        self.news_frame = ct.CTkFrame(
+            self.ch_frame,
+            corner_radius=10,
+            height=450,
+            width=850,
+            bg_color="transparent"
+        )
+        self.news_frame.place(relx=0.501, rely=0.595, anchor="center")
 
+        # number of cards to show
+        MAX_CARDS = 4
+
+        # grid setup:
+        # columns: [left padding (fixed 7px)] [content column (expandable)] [right padding (fixed 7px)]
+        # rows: [top padding (fixed 7px)] [card0] [spacer (min 7px, expandable)] [card1] ... [cardN-1] [bottom padding (fixed 7px)]
+        def setup_grid_with_frame_padding_and_gaps(num_cards):
+            # columns
+            self.news_frame.grid_columnconfigure(0, weight=0, minsize=7)   # left padding (fixed 7px)
+            self.news_frame.grid_columnconfigure(1, weight=1)              # content column (expands)
+            self.news_frame.grid_columnconfigure(2, weight=0, minsize=7)   # right padding (fixed 7px)
+
+            # rows
+            total_rows = num_cards * 2 + 1
+            for r in range(total_rows):
+                if r == 0 or r == total_rows - 1:
+                    # top and bottom padding rows: fixed 7px
+                    self.news_frame.grid_rowconfigure(r, weight=0, minsize=7)
+                elif r % 2 == 0:
+                    # spacer rows between cards: expandable, minsize 7
+                    self.news_frame.grid_rowconfigure(r, weight=1, minsize=7)
+                else:
+                    # card rows: fixed (cards control their own height)
+                    self.news_frame.grid_rowconfigure(r, weight=0)
+
+        def open_url(url):
+            webbrowser.open(url)
+
+        def short(text, max_length):
+            return text[:max_length - 3] + "..." if len(text) > max_length else text
+
+        print("Loading Minecraft Changelog... (this may take some time)")
+
+        self.news_widgets = []
+
+        try:
+            news = get_news_list()[:MAX_CARDS]
+            num_cards = len(news)
+            if num_cards == 0:
+                setup_grid_with_frame_padding_and_gaps(MAX_CARDS)
+            else:
+                setup_grid_with_frame_padding_and_gaps(num_cards)
+
+            for i, new in enumerate(news):
+                # compute grid row for this card: row = 1 + i*2
+                row_index = 1 + i * 2
+
+                title = short(new["title"], 40)
+                description = short(new["content"], 72)
+                imageURL = new["image"]
+                guid = new["link"]
+
+                frame = ct.CTkFrame(
+                    self.news_frame,
+                    corner_radius=7.5,
+                    height=100,
+                    width=780,
+                    fg_color="#262626",
+                    bg_color="transparent"
+                )
+                # place frame in content column (1). Left/right padding are handled by columns 0 and 2.
+                # anchor to top of its row so spacers appear BETWEEN cards (not above/below a card)
+                frame.grid(row=row_index, column=1, sticky="n", padx=0, pady=0)
+
+                # load image (synchronous as before)
+                resp = requests.get(imageURL, headers=mcNewsHeaders, stream=True, timeout=10)
+                img = Image.open(io.BytesIO(resp.content))
+
+                ctk_img = ct.CTkImage(light_image=img, dark_image=img, size=(80, 80))
+
+                img_label = ct.CTkLabel(frame, text="", image=ctk_img, bg_color="transparent", corner_radius=5)
+                img_label.place(x=5, y=10)
+
+                title_label = ct.CTkLabel(
+                    frame,
+                    text=title,
+                    font=ct.CTkFont(size=25, weight="bold", family=argonFont),
+                    text_color="white",
+                    bg_color="transparent"
+                )
+                title_label.place(x=110, y=10)
+
+                desc_label = ct.CTkLabel(
+                    frame,
+                    text=description,
+                    font=ct.CTkFont(size=15, family=argonFont),
+                    text_color="#b3b3b3",
+                    bg_color="transparent"
+                )
+                desc_label.place(x=110, y=60)
+
+                readmore_btn = ct.CTkButton(
+                    frame,
+                    text="Read More",
+                    font=ct.CTkFont(size=15, family=argonFont),
+                    command=functools.partial(open_url, guid),
+                    height=30,
+                    width=80,
+                    corner_radius=5,
+                    anchor="w",
+                    fg_color="transparent",
+                    bg_color="#262626",
+                    hover_color="#1a1a1a"
+                )
+                readmore_btn.place(x=680, y=60)
+
+                # keep references so CTkImage doesn't get GC'd
+                self.news_widgets.append((frame, ctk_img))
+
+        except Exception as e:
+            print("News load failed:", e)
+        
+        
         # Instances
         with open("launcherProfiles.json", "r") as js_read:
             s = js_read.read()
@@ -949,7 +998,6 @@ class Argon(ct.CTk):
         self.instance2.grid(row=0, column=1, sticky="nsew", pady=10, padx=10)
         self.instance3 = ct.CTkFrame(self.inst_list, corner_radius=7, height=190,width=230, fg_color="#262626")
         self.instance3.grid(row=0, column=2, sticky="nsew", pady=10, padx=10)'''
-
 
         # Settings
         self.set_frame = ct.CTkFrame(self, corner_radius=0, height=600, fg_color="transparent")
@@ -1192,8 +1240,7 @@ class Argon(ct.CTk):
 
 
         self.argon_settings_frame.place_forget()
-        
-
+    
         # Account
         self.acc_frame = ct.CTkFrame(self, corner_radius=0, height=600, fg_color="transparent")
         self.acc_frame.grid(row=0, column=1, sticky="nsew")
@@ -1212,24 +1259,45 @@ class Argon(ct.CTk):
         if auth_type == "ElyBy":
             self.skin_label.place(x=180, y=110)
         else:
-            self.skin_label.place(x=190, y=140)
+            self.skin_label.place(x=190, y=180)
         if auth_type=="Offline":
             self.skin_label.place(x=200, y=140)
         self.username_labelBig = ct.CTkLabel(self.acc_frame, text=username, font=ct.CTkFont(size=50, weight="bold", family=argonFont), bg_color="transparent")
         self.username_labelBig.place(x=350, y=140)
         self.account_label = ct.CTkLabel(self.acc_frame, text=f"{auth_type} Account", font=ct.CTkFont(size=20, family=argonFont), fg_color="transparent", text_color="#7a7a7a")
         self.account_label.place(x=350, y=200)
+
+        # Statistics Frame
+        #self.news_buttn = ct.CTkButton(self.stat_frame, text="Minecraft News", font=ct.CTkFont(size=15, family=argonFont), height=30, width=120, corner_radius=5, anchor="w", fg_color="#212121", bg_color="transparent", hover_color="#1a1a1a")
+        #self.news_buttn.place(relx=0.75, rely=0.1, anchor="w")
+        self.time_frame = ct.CTkFrame(self.acc_frame, corner_radius=10, height=150, width=240, bg_color="#000001" if customBG == True else "transparent")
+        self.time_frame.place(x=350, rely=0.54, anchor="w")
+        if customBG:
+            pywinstyles.set_opacity(self.time_frame, color="#000001")
+        self.title_of_tf = ct.CTkLabel(self.time_frame, text="Total Time Played", font=ct.CTkFont(size=20, weight="bold", family=argonFont), bg_color="transparent")
+        self.title_of_tf.place(relx=0.065, rely=0.15, anchor="w")
+        self.time_img = ct.CTkImage(light_image=Image.open("img/clock.png"), dark_image=Image.open("img/clock.png"), size=(25, 25))
+        self.time_img_label = ct.CTkLabel(self.time_frame, text="", image=self.time_img, bg_color="transparent", corner_radius=5)
+        self.time_img_label.place(relx=0.029, rely=0.36, anchor="w")
+        self.time_label = ct.CTkLabel(self.time_frame, text=playTime.fancyTimeToWords(playTime.getTotalTimePlayed()), font=ct.CTkFont(size=25, family=argonFont), bg_color="transparent")
+        self.time_label.place(relx=0.1775, rely=0.35, anchor="w")
+
+        self.title_of_tf = ct.CTkLabel(self.time_frame, text="Favorite Instance", font=ct.CTkFont(size=20, weight="bold", family=argonFont), bg_color="transparent")     
+        self.title_of_tf.place(relx=0.065, rely=0.6, anchor="w")   
+
+        self.fav_img = ct.CTkImage(light_image=Image.open("img/instance_icons/"+playTime.getFavInstIcon()+".png"), dark_image=Image.open("img/instance_icons/"+playTime.getFavInstIcon()+".png"), size=(25, 25))
+        self.fav_img_label = ct.CTkLabel(self.time_frame, text="", image=self.fav_img, bg_color="transparent", corner_radius=5)
+        self.fav_img_label.place(relx=0.0285, rely=0.778, anchor="w")
+
+        self.fav_inst_label = ct.CTkLabel(self.time_frame, text=playTime.getFavInstance(), font=ct.CTkFont(size=25, family=argonFont), bg_color="transparent")
+        self.fav_inst_label.place(relx=0.179, rely=0.779, anchor="w")
+
         self.change_skin_btn = ct.CTkButton(self.acc_frame, text="Change Skin", font=ct.CTkFont(size=15, family=argonFont), command=self.change_skin, height=30, width=120, corner_radius=5, anchor="center")
-        self.change_skin_btn.place(x=350, y=250)
+        self.change_skin_btn.place(x=350, rely=0.675)
         def sign_out_confirm():
-            con = msg.CTkMessagebox(title="Sign Out", message="Are you sure you want to sign out?", icon="warning", option_1="No", option_2="Yes")
-            response = con.get()
-            if response == "Yes":
-                self.sign_out()
-            else:
-                pass
-        self.signout_btn = ct.CTkButton(self.acc_frame, text="Sign Out", font=ct.CTkFont(size=15, family=argonFont), command=sign_out_confirm, height=30, width=120, corner_radius=5, anchor="center", fg_color="#cc0000", hover_color="#990000")
-        self.signout_btn.place(x=350, y=290)
+            self.sign_out()
+        self.signout_btn = ct.CTkButton(self.acc_frame, text="Sign Out", font=ct.CTkFont(size=15, family=argonFont), command=sign_out_confirm, height=30, width=90, corner_radius=5, anchor="center", fg_color="#cc0000", hover_color="#990000")
+        self.signout_btn.place(x=475, rely=0.675)
         self.argon_version = ct.CTkLabel(self.acc_frame, text=f"Argon v{version}", font=ct.CTkFont(size=15, family=argonFont), fg_color="transparent", text_color="#7a7a7a")
         self.argon_version.place(relx=0.01, rely=0.975, anchor="w")
         self.builtby = ct.CTkLabel(self.acc_frame, text="Made by v-pun215.", font=ct.CTkFont(size=15, family=argonFont), fg_color="transparent", text_color="#7a7a7a")
@@ -1238,7 +1306,7 @@ class Argon(ct.CTk):
         endtime = time.time()
         print(f"Argon loaded in {round(endtime - starttime, 2)} seconds.")
         if os_name == "Windows":
-            if actualTheme == "dark":
+            if actualTheme == "dark":   
                 pywinstyles.change_header_color(self, color="#242424")
             else:
                 pywinstyles.change_header_color(self, color="#ebebeb")
@@ -1910,12 +1978,12 @@ class Argon(ct.CTk):
         elif auth_type == "Offline":
             msg.CTkMessagebox(title="Error", message="You cannot change the skin of an offline account.", icon="cancel")
     def sign_out(self):
-        prompt = msg.CTkMessagebox(title="Sign Out", message="Are you sure you want to sign out?", icon="warning", option_1="No", option_2="Yes")
+        prompt = msg.CTkMessagebox(title="Sign Out", message="Are you sure you want to sign out? This will delete all your saved instances!", icon="warning", option_1="No", option_2="Yes")
         response = prompt.get()
         if response == "Yes":
-
             os.remove("launcherProfiles.json")
             os.remove("settings.json")
+            shutil.rmtree("instances")
             msg.CTkMessagebox(title="Signed Out", message="You have been signed out.", icon="check")
             self.destroy()
             if os_name == "Windows":
@@ -1957,11 +2025,12 @@ class Argon(ct.CTk):
         os.execl(sys.executable, os.path.abspath(__file__), *sys.argv)
 
     def refresh_instances(self):
+        # Only destroy and recreate the scrollable list, not the entire frame
         self.inst_list.destroy()
         
         with open("launcherProfiles.json", "r") as js_read:
             s = js_read.read()
-            s = s.replace('\t','')  #Trailing commas in dict cause file read problems, these lines will fix it.
+            s = s.replace('\t','')  # Trailing commas in dict cause file read problems
             s = s.replace('\n','')
             s = s.replace(',}','}')
             s = s.replace(',]',']')
@@ -1969,70 +2038,141 @@ class Argon(ct.CTk):
         
         instances = data["all-instances"]
 
-
-        
-
-
         def get_icon_PIL(icon_name):
             if icon_name == None:
                 return Image.open("img/instance_icons/none.png")
             else:
                 return Image.open(f"img/instance_icons/{icon_name}.png")
-            
-        self.inst_frame = ct.CTkFrame(self, corner_radius=0, height=600, fg_color="transparent")
-        self.inst_frame.grid(row=0, column=1, sticky="nsew")
-        self.inst_frame.grid_columnconfigure(0, weight=1)
-        self.inst_title = ct.CTkLabel(self.inst_frame, text="Instances", font=ct.CTkFont(size=40, weight="bold", family=argonFont), fg_color="transparent")
-        self.inst_title.place(x=40, y=20)
-        self.add_inst_button = ct.CTkButton(self.inst_frame, text="Add Instance", font=ct.CTkFont(size=15, family=argonFont), command=self.showAddInstanceWindow, height=30, width=120, corner_radius=5, anchor="center")
-        self.add_inst_button.place(x=680, y=35)
-        self.inst_list = ct.CTkScrollableFrame(self.inst_frame, corner_radius=8, height=468,width=765, fg_color="#2b2b2b", bg_color="transparent")
+        
+        # Recreate only the scrollable list, not the entire inst_frame
+        self.inst_list = ct.CTkScrollableFrame(
+            self.inst_frame, 
+            corner_radius=8, 
+            height=468,
+            width=765, 
+            fg_color="#2b2b2b", 
+            bg_color="transparent"
+        )
         self.inst_list.place(relx=0.501, rely=0.55, anchor="center")
+        
         instance_frames = {}
-
         row_index = 0
+        
         if instances == [{}]:
-            no_inst_label = ct.CTkLabel(self.inst_list, text="No instances found", font=ct.CTkFont(size=30, family=argonFont), bg_color="transparent", text_color="#b3b3b3")
+            no_inst_label = ct.CTkLabel(
+                self.inst_list, 
+                text="No instances found", 
+                font=ct.CTkFont(size=30, family=argonFont), 
+                bg_color="transparent", 
+                text_color="#b3b3b3"
+            )
             no_inst_label.grid(row=0, column=0, sticky="nsew", pady=10, padx=10)
+        
         for instance_dict in instances:
             for instance_name, instance_data_list in instance_dict.items():
                 instance_data = instance_data_list[0]
 
-                frame = ct.CTkFrame(self.inst_list, corner_radius=7, height=125, width=745, fg_color="#262626")
+                frame = ct.CTkFrame(
+                    self.inst_list, 
+                    corner_radius=7, 
+                    height=125, 
+                    width=745, 
+                    fg_color="#262626"
+                )
                 frame.grid(row=row_index, column=0, sticky="nsew", pady=7, padx=7)
                 
-                img = ct.CTkImage(light_image=get_icon_PIL(instance_data["icon"]), dark_image=get_icon_PIL(instance_data["icon"]), size=(50,50))
+                img = ct.CTkImage(
+                    light_image=get_icon_PIL(instance_data["icon"]), 
+                    dark_image=get_icon_PIL(instance_data["icon"]), 
+                    size=(50,50)
+                )
                 img_label = ct.CTkLabel(frame, text="", image=img, bg_color="transparent")
                 img_label.place(x=10, y=10)
                 
-                name_label = ct.CTkLabel(frame, text=instance_data["name"], font=ct.CTkFont(size=30, weight="bold", family=argonFont), bg_color="transparent")
+                name_label = ct.CTkLabel(
+                    frame, 
+                    text=instance_data["name"], 
+                    font=ct.CTkFont(size=30, weight="bold", family=argonFont), 
+                    bg_color="transparent"
+                )
                 name_label.place(x=70, y=13)
 
-                version_label = ct.CTkLabel(frame, text=str(instance_data["method"]).capitalize() + " " + str(instance_data["type"]).capitalize() + " " + instance_data["version"], font=ct.CTkFont(size=15, family=argonFont), bg_color="transparent", text_color="#b3b3b3")
+                version_label = ct.CTkLabel(
+                    frame, 
+                    text=str(instance_data["method"]).capitalize() + " " + str(instance_data["type"]).capitalize() + " " + instance_data["version"], 
+                    font=ct.CTkFont(size=15, family=argonFont), 
+                    bg_color="transparent", 
+                    text_color="#b3b3b3"
+                )
                 version_label.place(x=70, y=50)
 
-                select_button = ct.CTkButton(frame, text="Select", font=ct.CTkFont(size=15, family=argonFont), command=functools.partial(self.choose_inst, instance_data["name"], instance_data["method"] + " " + instance_data["type"] + " " + instance_data["version"]), height=30, width=80, corner_radius=5, anchor="center")
+                select_button = ct.CTkButton(
+                    frame, 
+                    text="Select", 
+                    font=ct.CTkFont(size=15, family=argonFont), 
+                    command=functools.partial(
+                        self.choose_inst, 
+                        instance_data["name"], 
+                        instance_data["method"] + " " + instance_data["type"] + " " + instance_data["version"]
+                    ), 
+                    height=30, 
+                    width=80, 
+                    corner_radius=5, 
+                    anchor="center"
+                )
                 select_button.place(x=655, y=10)
                 
-                settings_button = ct.CTkButton(frame, text="Settings", font=ct.CTkFont(size=15, family=argonFont), command=lambda instee_name=instance_data["name"], instee_icon=instance_data["icon"], instee_version=instance_data["method"] + " " + instance_data["type"] + " " + instance_data["version"]: self.instance_settings(instee_name, instee_icon, instee_version), height=30, width=80, corner_radius=5, anchor="center")
+                settings_button = ct.CTkButton(
+                    frame, 
+                    text="Settings", 
+                    font=ct.CTkFont(size=15, family=argonFont), 
+                    command=lambda instee_name=instance_data["name"], instee_icon=instance_data["icon"], instee_version=instance_data["method"] + " " + instance_data["type"] + " " + instance_data["version"]: self.instance_settings(instee_name, instee_icon, instee_version), 
+                    height=30, 
+                    width=80, 
+                    corner_radius=5, 
+                    anchor="center"
+                )
                 settings_button.place(x=655, y=50)
 
-                pinned_text_label = ct.CTkLabel(frame, text="Pinned:", font=ct.CTkFont(size=15, family=argonFont), bg_color="transparent", text_color="white")
+                pinned_text_label = ct.CTkLabel(
+                    frame, 
+                    text="Pinned:", 
+                    font=ct.CTkFont(size=15, family=argonFont), 
+                    bg_color="transparent", 
+                    text_color="white"
+                )
                 pinned_text_label.place(x=12, y=83)
-                var_name = "self.pinned_var"+str(row_index)
+                
                 pinned_var = ct.StringVar(value="on" if instance_data["pinned"] else "off")
-                #globals()[var_name] = pinned_var
-                pinned_checkbox = ct.CTkCheckBox(frame,text="", corner_radius=5, fg_color="white", bg_color="#262626", command=lambda name=instance_data["name"], icon=instance_data["icon"], pinD_var=pinned_var, inst_name=instance_name: self.pinInstance(name, icon, pinD_var, inst_name), variable=pinned_var, onvalue="on",offvalue="off", checkbox_height=20, checkbox_width=20)
+                
+                pinned_checkbox = ct.CTkCheckBox(
+                    frame,
+                    text="", 
+                    corner_radius=5, 
+                    fg_color="white", 
+                    bg_color="#262626", 
+                    command=lambda name=instance_data["name"], icon=instance_data["icon"], pinD_var=pinned_var, inst_name=instance_name: self.pinInstance(name, icon, pinD_var, inst_name), 
+                    variable=pinned_var, 
+                    onvalue="on",
+                    offvalue="off", 
+                    checkbox_height=20, 
+                    checkbox_width=20
+                )
                 pinned_checkbox.place(x=75, y=85)
 
-                time_label = ct.CTkLabel(frame, text="Played for " +playTime.timeToWords(instance_data["timePlayed"]), font=ct.CTkFont(size=15, family=argonFont), bg_color="transparent", text_color="#b3b3b3")
+                time_label = ct.CTkLabel(
+                    frame, 
+                    text="Played for " + playTime.timeToWords(instance_data["timePlayed"]), 
+                    font=ct.CTkFont(size=15, family=argonFont), 
+                    bg_color="transparent", 
+                    text_color="#b3b3b3"
+                )
                 time_label.place(x=580, y=85)
 
                 # Store the frame in the dictionary
                 instance_frames[instance_name] = frame
 
                 row_index += 1
-
 
 
     def select_frame(self, name):
@@ -2198,14 +2338,12 @@ class Argon(ct.CTk):
                         print("Error: Instance not found in pinned instances.")
 
     def showAddInstanceWindow(self):
-        if connected == True:
-            try:
-                self.addInstance_window.deiconify()
-            except:
-                self.addInstance()
-                self.addInstance_window.deiconify()
-        else:
-            msg.CTkMessagebox(title="Error", message="You need to be connected to the internet to add an instance.", icon="cancel")
+        try:
+            self.addInstance_window.deiconify()
+        except:
+            self.addInstance()
+            self.addInstance_window.deiconify()
+
     def addInstance(self):
         self.addInstance_window = ct.CTkToplevel(self)
         self.addInstance_window.withdraw()
@@ -2217,8 +2355,7 @@ class Argon(ct.CTk):
             self.addInstance_window.after(200, lambda: self.addInstance_window.iconbitmap("img/icon.ico"))
         elif os_name == "Linux":
             pass
-        self.addInstance_window.protocol("WM_DELETE_WINDOW", lambda: closeWindow())
-        self.addInstance_window.withdraw()
+        
         with open("launcherProfiles.json", "r") as js_read:
             s = js_read.read()
             s = s.replace('\t','')
@@ -2226,30 +2363,18 @@ class Argon(ct.CTk):
             s = s.replace(',}','}')
             s = s.replace(',]',']')
             data = json.loads(s)
+        
         icon_list = data["icons"]
         self.chosen_icon = None
-        def chooseIcon(icon_name):
-            self.chosen_icon = icon_name
-            counter = 0
-            for icon in icon_list:
-                for i in range(1,29):
-                    if icon[f"icon{i}"] is not None:
-                        counter += 1
-                        if icon_name == icon[f"icon{i}"]:
-                            fg = "#1f6aa5"
-                            hover = "#1a5380"
-                        else:
-                            fg = "transparent"
-                            hover = "#1a1a1a"
-                        self.icon_list.append(icon[f"icon{i}"])
-                        self.icon_name = icon[f"icon{i}"]
-                        self.icon_select_btn = ct.CTkButton(self.addInstance_window, text="", image=get_icon_PIL(icon[f"icon{i}"]), font=ct.CTkFont(size=30, family=argonFont), command=lambda icon_name=self.icon_name: chooseIcon(icon_name), height=50, width=50, corner_radius=5, anchor="center", fg_color=fg, bg_color="transparent", hover_color=hover, compound="left", )
-                        if i<=14:
-                            self.icon_select_btn.place(x=-25 + (i * 50), y=10)
-                        elif i>14:
-                            self.icon_select_btn.place(x=-25 + ((i-14) * 50), y=60)
-                    else:
-                        pass
+        
+        # Only fetch online data if connected
+        fabric_loaders_cache = {}
+        if connected:
+            try:
+                fabric_loaders_cache = {loader['version']: loader for loader in mc.fabric.get_all_loader_versions()}
+            except:
+                pass
+        
         def get_icon_PIL(icon_name):
             if icon_name == None:
                 photo = Image.open("img/instance_icons/none.png")
@@ -2259,201 +2384,342 @@ class Argon(ct.CTk):
                 photo = Image.open(f"img/instance_icons/{icon_name}.png")
                 photo = ct.CTkImage(photo, size=(35,35))
                 return photo
-
-        self.icon_list = []
-        counter = 0
-        for icon in icon_list:
-            for i in range(1,29):
-                if icon[f"icon{i}"] is not None:
-                    counter += 1
-                    self.icon_list.append(icon[f"icon{i}"])
-                    self.icon_name = icon[f"icon{i}"]
-                    self.icon_select_btn = ct.CTkButton(self.addInstance_window, text="", image=get_icon_PIL(icon[f"icon{i}"]), font=ct.CTkFont(size=30, family=argonFont), command=lambda icon_name=self.icon_name: chooseIcon(icon_name), height=50, width=50, corner_radius=5, anchor="center", fg_color="transparent", bg_color="transparent", hover_color="#1a1a1a", compound="left", )
-                    if i<=14:
-                        self.icon_select_btn.place(x=-25 + (i * 50), y=10)
-                    elif i>14:
-                        self.icon_select_btn.place(x=-25 + ((i-14) * 50), y=60)
+        
+        # Store icon buttons for updating their state
+        self.icon_buttons = {}
+        
+        def chooseIcon(icon_name):
+            self.chosen_icon = icon_name
+            # Update button colors efficiently
+            for btn_icon, btn in self.icon_buttons.items():
+                if btn_icon == icon_name:
+                    btn.configure(fg_color="#1f6aa5", hover_color="#1a5380")
                 else:
-                    pass
+                    btn.configure(fg_color="transparent", hover_color="#1a1a1a")
+        
+        # Create icon buttons only once
+        self.icon_list = []
+        for icon in icon_list:
+            for i in range(1, 29):
+                if icon.get(f"icon{i}") is not None:
+                    icon_name = icon[f"icon{i}"]
+                    self.icon_list.append(icon_name)
+                    
+                    icon_btn = ct.CTkButton(
+                        self.addInstance_window, 
+                        text="", 
+                        image=get_icon_PIL(icon_name),
+                        font=ct.CTkFont(size=30, family=argonFont),
+                        command=lambda name=icon_name: chooseIcon(name),
+                        height=50, 
+                        width=50, 
+                        corner_radius=5,
+                        anchor="center",
+                        fg_color="transparent",
+                        bg_color="transparent",
+                        hover_color="#1a1a1a",
+                        compound="left"
+                    )
+                    
+                    if i <= 14:
+                        icon_btn.place(x=-25 + (i * 50), y=10)
+                    else:
+                        icon_btn.place(x=-25 + ((i-14) * 50), y=60)
+                    
+                    self.icon_buttons[icon_name] = icon_btn
+        
         name_va1r = ct.StringVar()
-        self.name_entry1 = ct.CTkEntry(self.addInstance_window, placeholder_text="Name...", font=ct.CTkFont(size=25, family=argonFont), width=400, textvariable=name_va1r, placeholder_text_color="#b3b3b3")
+        self.name_entry1 = ct.CTkEntry(
+            self.addInstance_window,
+            placeholder_text="Name...",
+            font=ct.CTkFont(size=25, family=argonFont),
+            width=400,
+            textvariable=name_va1r,
+            placeholder_text_color="#b3b3b3"
+        )
         self.name_entry1.place(relx=0.235, rely=0.4)
+        
         method_var = ct.StringVar()
-        method_var.set("Vanilla")
+        
+        # Prepare version lists - only if connected
         self.vanilla_versions = []
         self.vanilla_vers = []
         self.forge_versions = []
         self.fabric_versions = []
+        
+        if connected:
+            self.vanilla_versions = [f"{v['type']} {v['id']}" for v in self.available_versions]
+            self.vanilla_vers = [v["id"] for v in self.available_versions]
+            self.forge_versions = list(self.forge_versions_all)
+            
+            for version in self.fabric_versions_all:
+                version_type = "release" if version["stable"] else "snapshot"
+                self.fabric_versions.append(f"{version_type} {version['version']}")
+        
+        # Build installed versions list
         self.installed_versions = []
         self.installed_versions_all = mc.utils.get_installed_versions(mc_dir)
-        for version in self.available_versions:
-            self.vanilla_versions.append(version["type"] + " " + version["id"])
-        for version in self.available_versions:
-            self.vanilla_vers.append(version["id"])
-        for version in self.forge_versions_all:
-            self.forge_versions.append(version)
-        for version in self.fabric_versions_all:
-            if version["stable"]:
-                self.fabric_versions.append("release" + " " + str(version["version"]))
-            else:
-                self.fabric_versions.append("snapshot" + " "+ str(version["version"]))
+        
         for version in self.installed_versions_all:
-            if version["id"] in self.vanilla_vers:
-                self.installed_versions.append("vanilla"+ " " +version["type"] + " " + version["id"])
-            elif "fabric-loader-" in version["id"]:
-                for loader in mc.fabric.get_all_loader_versions():
-                    thing = f"fabric-loader-{loader['version']}-"
-                    if thing in version["id"]:
-                        new = version["id"].replace(thing, "")
-                        for version in self.fabric_versions_all:
-                            if version["version"] == new:
-                                if version["stable"]:
-                                    self.installed_versions.append("fabric" + " " + "release" + " " + new)
-                                else:
-                                    self.installed_versions.append("fabric" + " " + "snapshot" + " " + new)
+            version_id = version["id"]
+            
+            if version_id in self.vanilla_vers:
+                self.installed_versions.append(f"vanilla {version['type']} {version_id}")
+            
+            elif "fabric-loader-" in version_id and fabric_loaders_cache:
+                # Extract fabric version efficiently using cached loaders
+                for loader_ver in fabric_loaders_cache.keys():
+                    thing = f"fabric-loader-{loader_ver}-"
+                    if thing in version_id:
+                        mc_version = version_id.replace(thing, "")
+                        # Find matching fabric version
+                        if connected:
+                            for fab_ver in self.fabric_versions_all:
+                                if fab_ver["version"] == mc_version:
+                                    version_type = "release" if fab_ver["stable"] else "snapshot"
+                                    self.installed_versions.append(f"fabric {version_type} {mc_version}")
+                                    break
+                        else:
+                            self.installed_versions.append(f"fabric {version_id}")
                         break
-            elif "-forge-" in version["id"]:
-                versionee, loader = version["id"].split("-forge-")
-                new = versionee + "-" + loader
-                if mc.forge.is_forge_version_valid(new):
-                    self.installed_versions.append("forge" + " " + new)
-            elif "-forge" in version["id"]:
-                versionee, forge_version, loader, v2  = version["id"].split("-")
-                new = forge_version.replace("forge", "") + "-" + loader + "-" + v2
-                if mc.forge.is_forge_version_valid(new):
-                    self.installed_versions.append("forge" + " " + new)
+            
+            elif "-forge-" in version_id:
+                parts = version_id.split("-forge-")
+                if len(parts) == 2:
+                    new = f"{parts[0]}-{parts[1]}"
+                    if connected:
+                        if mc.forge.is_forge_version_valid(new):
+                            self.installed_versions.append(f"forge {new}")
+                    else:
+                        self.installed_versions.append(f"forge {new}")
+            
+            elif "-forge" in version_id:
+                parts = version_id.split("-")
+                if len(parts) >= 4:
+                    new = f"{parts[1].replace('forge', '')}-{parts[2]}-{parts[3]}"
+                    if connected:
+                        if mc.forge.is_forge_version_valid(new):
+                            self.installed_versions.append(f"forge {new}")
+                    else:
+                        self.installed_versions.append(f"forge {new}")
             else:
-                self.installed_versions.append(version["type"] + " " + version["id"])
-        version_var = ct.StringVar()
-        version_var.set(self.vanilla_versions[0])
-        self.chosen_version = str("Vanilla " + self.vanilla_versions[0])
-        if self.vanilla_versions[0].startswith("release "):
-                self.chosen_version_alone = self.vanilla_versions[0].strip("release ")
-        elif self.vanilla_versions[0].startswith("snapshot "):
-            self.chosen_version_alone = self.vanilla_versions[0].strip("snapshot ")
-        def get_version_method(version):
-            if version in self.vanilla_versions:
-                return "Vanilla"
-            elif version in self.forge_versions:
-                return "Forge"
-            elif version in self.fabric_versions:
-                return "Fabric"
+                self.installed_versions.append(f"{version['type']} {version_id}")
+        
+        # Set default method and version based on connection status
+        if connected and self.vanilla_versions:
+            method_var.set("Vanilla")
+            version_var = ct.StringVar()
+            version_var.set(self.vanilla_versions[0])
+            self.chosen_version = f"Vanilla {self.vanilla_versions[0]}"
+            
+            if self.vanilla_versions[0].startswith("release "):
+                self.chosen_version_alone = self.vanilla_versions[0].replace("release ", "")
+            elif self.vanilla_versions[0].startswith("snapshot "):
+                self.chosen_version_alone = self.vanilla_versions[0].replace("snapshot ", "")
+        elif self.installed_versions:
+            method_var.set("Installed")
+            version_var = ct.StringVar()
+            version_var.set(self.installed_versions[0])
+            self.chosen_version = f"Installed {self.installed_versions[0]}"
+            self.chosen_version_alone = self.installed_versions[0]
+        else:
+            # No versions available at all
+            method_var.set("Installed")
+            version_var = ct.StringVar()
+            version_var.set("No versions available")
+            self.chosen_version = "No versions available"
+            self.chosen_version_alone = ""
         
         def change_version(var):
-            if not var in self.vanilla_versions:
-                if not var in self.forge_versions:
-                    if not var in self.fabric_versions:
-                        if var.startswith("vanilla"):
-                            var2 = var.replace("vanilla ", "")
-                            if not var2 in self.vanilla_versions:
-                                msg.CTkMessagebox(title="Error", message="Invalid version selected.", icon="cancel")
-                                return
-                        elif var.startswith("forge"):
-                            var2 = var.replace("forge ", "")
-                            if not mc.forge.is_forge_version_valid(var2):
-                                msg.CTkMessagebox(title="Error", message="Invalid version selected.", icon="cancel")
-                                return
-                        elif var.startswith("fabric"):
-                            var2 = var.replace("fabric ", "")
-                            if not var2 in self.fabric_versions:
-                                print(var)
-                                msg.CTkMessagebox(title="Error", message="Invalid version selected.", icon="cancel")
-                                return
-                            
-                        else:
-                            msg.CTkMessagebox(title="Error", message="Invalid version selected.", icon="cancel")
-                            return
+            # Validation logic
+            if var not in self.vanilla_versions and var not in self.forge_versions and var not in self.fabric_versions:
+                if var.startswith("vanilla"):
+                    var2 = var.replace("vanilla ", "")
+                    if var2 not in self.vanilla_versions:
+                        msg.CTkMessagebox(title="Error", message="Invalid version selected.", icon="cancel")
+                        return
+                elif var.startswith("forge"):
+                    var2 = var.replace("forge ", "")
+                    if connected and not mc.forge.is_forge_version_valid(var2):
+                        msg.CTkMessagebox(title="Error", message="Invalid version selected.", icon="cancel")
+                        return
+                elif var.startswith("fabric"):
+                    var2 = var.replace("fabric ", "")
+                    if var2 not in self.fabric_versions:
+                        msg.CTkMessagebox(title="Error", message="Invalid version selected.", icon="cancel")
+                        return
+                else:
+                    msg.CTkMessagebox(title="Error", message="Invalid version selected.", icon="cancel")
+                    return
+            
             version_var.set(var)
-            self.chosen_version = str(self.method_dropdown.get()+ " " + var) # Set the chosen version based on the method and version
-
+            self.chosen_version = f"{self.method_dropdown.get()} {var}"
+            
+            # Strip version prefix
             if var.startswith("release "):
-                self.chosen_version_alone = var.strip("release ")
+                self.chosen_version_alone = var.replace("release ", "")
             elif var.startswith("snapshot "):
-                self.chosen_version_alone = var.strip("snapshot ")
+                self.chosen_version_alone = var.replace("snapshot ", "")
             elif var.startswith("forge"):
-                self.chosen_version_alone = var.strip("forge ")
+                self.chosen_version_alone = var.replace("forge ", "")
             else:
                 self.chosen_version_alone = var
-            print(self.method_dropdown.get(),var)
-        self.version_dropdown = ct.CTkComboBox(self.addInstance_window, command=change_version, values=self.vanilla_versions, variable=version_var, font=ct.CTkFont(size=15, family=argonFont), width=200, button_color="#565b5e" if actualTheme == "dark" else "#a3a3a3", bg_color="transparent", button_hover_color="#3c3e41" if actualTheme == "dark" else "#868686", fg_color="#343638" if actualTheme == "dark" else "#868686", hover="#3c3e41" if actualTheme == "dark" else "#868686")
+            
+            print(self.method_dropdown.get(), var)
+        
+        # Determine initial dropdown values
+        initial_values = self.vanilla_versions if connected and self.vanilla_versions else self.installed_versions if self.installed_versions else ["No versions available"]
+        
+        self.version_dropdown = ct.CTkComboBox(
+            self.addInstance_window,
+            command=change_version,
+            values=initial_values,
+            variable=version_var,
+            font=ct.CTkFont(size=15, family=argonFont),
+            width=200,
+            button_color="#565b5e" if actualTheme == "dark" else "#a3a3a3",
+            bg_color="transparent",
+            button_hover_color="#3c3e41" if actualTheme == "dark" else "#868686",
+            fg_color="#343638" if actualTheme == "dark" else "#868686",
+            hover="#3c3e41" if actualTheme == "dark" else "#868686"
+        )
         self.version_dropdown.place(x=295, rely=0.55)
         self.version_dropdown.bind("<Return>", lambda event: change_version(version_var.get()))
-        if os_name == "Windows":
-            CTkScrollableDropdown(self.version_dropdown, values=self.vanilla_versions, justify="left", frame_corner_radius=5, command=change_version)
+        
+        if os_name == "Windows" and connected:
+            CTkScrollableDropdown(self.version_dropdown, values=initial_values, justify="left", frame_corner_radius=5, command=change_version)
+        
         def checkInstalled():
+            if not connected:
+                msg.CTkMessagebox(title="Error", message="You need to be connected to the internet to install new versions.", icon="cancel")
+                return
+            
             isinstalled = False
-            print(self.chosen_version_alone)
             if method_var.get() == "Vanilla":
-                for version in self.installed_versions:
+                for version in self.installed_versions_all:
                     if self.chosen_version_alone == version["id"]:
                         isinstalled = True
                         break
-                    else:
-                        isinstalled = False
-            else:
-                pass
-            if isinstalled == True:
+            
+            if isinstalled:
                 msg.CTkMessagebox(title="Instance already installed", message="This version is already installed.", icon="info")
             else:
                 print("Not installed")
                 self.handle_download(self.chosen_version)
-        self.install_btn = ct.CTkButton(self.addInstance_window, text="Install", font=ct.CTkFont(size=15, family=argonFont), command=checkInstalled, corner_radius=5, anchor="center", width=60)
-        self.install_btn.place(x=515, rely=0.55)
+        
+        self.install_btn = ct.CTkButton(
+            self.addInstance_window,
+            text="Install",
+            font=ct.CTkFont(size=15, family=argonFont),
+            command=checkInstalled,
+            corner_radius=5,
+            anchor="center",
+            width=60
+        )
+        
+        # Only show install button if connected and not on Installed method
+        if connected and method_var.get() != "Installed":
+            self.install_btn.place(x=515, rely=0.55)
+        
         def method_change(var):
             print(var)
             if var == "Vanilla":
+                if not connected:
+                    msg.CTkMessagebox(title="Error", message="You need to be connected to the internet to access online versions.", icon="cancel")
+                    method_var.set("Installed")
+                    return
+                
                 version_var.set(self.vanilla_versions[0])
-                self.chosen_version = str("Vanilla " + self.vanilla_versions[0])
+                self.chosen_version = f"Vanilla {self.vanilla_versions[0]}"
                 if self.vanilla_versions[0].startswith("release "):
-                    self.chosen_version_alone = self.vanilla_versions[0].strip("release ")
+                    self.chosen_version_alone = self.vanilla_versions[0].replace("release ", "")
                 elif self.vanilla_versions[0].startswith("snapshot "):
-                    self.chosen_version_alone = self.vanilla_versions[0].strip("snapshot ")
+                    self.chosen_version_alone = self.vanilla_versions[0].replace("snapshot ", "")
                 self.version_dropdown.configure(values=self.vanilla_versions)
-                self.version_dropdown.bind("<Return>", lambda event: change_version(version_var.get()))
                 self.install_btn.place(x=515, rely=0.55)
                 if os_name == "Windows":
                     CTkScrollableDropdown(self.version_dropdown, values=self.vanilla_versions, justify="left", frame_corner_radius=5, command=change_version)
+            
             elif var == "Forge":
+                if not connected:
+                    msg.CTkMessagebox(title="Error", message="You need to be connected to the internet to access online versions.", icon="cancel")
+                    method_var.set("Installed")
+                    return
+                
                 version_var.set(self.forge_versions[0])
-                self.chosen_version = str("Forge " + self.forge_versions[0])
+                self.chosen_version = f"Forge {self.forge_versions[0]}"
                 self.chosen_version_alone = self.forge_versions[0]
                 self.version_dropdown.configure(values=self.forge_versions)
-                self.version_dropdown.bind("<Return>", lambda event: change_version(version_var.get()))
                 self.install_btn.place(x=515, rely=0.55)
                 if os_name == "Windows":
                     CTkScrollableDropdown(self.version_dropdown, values=self.forge_versions, justify="left", frame_corner_radius=5, command=change_version)
+            
             elif var == "Fabric":
+                if not connected:
+                    msg.CTkMessagebox(title="Error", message="You need to be connected to the internet to access online versions.", icon="cancel")
+                    method_var.set("Installed")
+                    return
+                
                 version_var.set(self.fabric_versions[0])
-                self.chosen_version = str("Fabric " + self.fabric_versions[0])
+                self.chosen_version = f"Fabric {self.fabric_versions[0]}"
                 self.chosen_version_alone = self.fabric_versions[0]
                 self.version_dropdown.configure(values=self.fabric_versions)
-                self.version_dropdown.bind("<Return>", lambda event: change_version(version_var.get()))
                 self.install_btn.place(x=515, rely=0.55)
                 if os_name == "Windows":
                     CTkScrollableDropdown(self.version_dropdown, values=self.fabric_versions, justify="left", frame_corner_radius=5, command=change_version)
+            
             elif var == "Installed":
+                if not self.installed_versions:
+                    msg.CTkMessagebox(title="Error", message="No versions installed.", icon="cancel")
+                    return
+                
                 version_var.set(self.installed_versions[0])
-                self.chosen_version = str("Installed " + self.installed_versions[0])
+                self.chosen_version = f"Installed {self.installed_versions[0]}"
                 self.chosen_version_alone = self.installed_versions[0]
                 self.version_dropdown.configure(values=self.installed_versions)
                 self.version_dropdown.place(x=295, rely=0.55)
-                self.version_dropdown.bind("<Return>", lambda event: change_version(version_var.get()))
                 self.install_btn.place_forget()
                 if os_name == "Windows":
                     CTkScrollableDropdown(self.version_dropdown, values=self.installed_versions, justify="left", frame_corner_radius=5, command=change_version)
-        self.method_dropdown = ct.CTkOptionMenu(self.addInstance_window,variable=method_var, font=ct.CTkFont(size=15, family=argonFont), values=["Vanilla", "Forge", "Fabric", "Installed"], width=100, button_color="#565b5e" if actualTheme == "dark" else "#a3a3a3", bg_color="transparent", button_hover_color="#3c3e41" if actualTheme == "dark" else "#868686", fg_color="#343638" if actualTheme == "dark" else "#868686", hover="#3c3e41" if actualTheme == "dark" else "#868686", command=method_change)
+        
+        # Determine available methods based on connection
+        available_methods = ["Installed"]
+        if connected:
+            available_methods = ["Vanilla", "Forge", "Fabric", "Installed"]
+        
+        self.method_dropdown = ct.CTkOptionMenu(
+            self.addInstance_window,
+            variable=method_var,
+            font=ct.CTkFont(size=15, family=argonFont),
+            values=available_methods,
+            width=100,
+            button_color="#565b5e" if actualTheme == "dark" else "#a3a3a3",
+            bg_color="transparent",
+            button_hover_color="#3c3e41" if actualTheme == "dark" else "#868686",
+            fg_color="#343638" if actualTheme == "dark" else "#868686",
+            hover="#3c3e41" if actualTheme == "dark" else "#868686",
+            command=method_change
+        )
         self.method_dropdown.place(x=175, rely=0.55)
-        namevar = self.name_entry1.get()
-
+        
         def closeWindow():
             self.name_entry1.delete(0, "end")
             self.addInstance_window.withdraw()
-
         
-        self.addinstance_btn = ct.CTkButton(self.addInstance_window, text="Add Instance", font=ct.CTkFont(size=15, family=argonFont), command=lambda: self.addinstance_fr(name=self.name_entry1.get(), version=self.chosen_version, icon=self.chosen_icon), corner_radius=5, anchor="center", width=120)
+        self.addInstance_window.protocol("WM_DELETE_WINDOW", lambda: closeWindow())
+        
+        self.addinstance_btn = ct.CTkButton(
+            self.addInstance_window,
+            text="Add Instance",
+            font=ct.CTkFont(size=15, family=argonFont),
+            command=lambda: self.addinstance_fr(name=self.name_entry1.get(), version=self.chosen_version, icon=self.chosen_icon),
+            corner_radius=5,
+            anchor="center",
+            width=120
+        )
         self.addinstance_btn.place(x=300, rely=0.75)
 
-        
+            
         #CTkScrollableDropdown(self.method_dropdown, values=["Vanilla", "Forge", "Fabric"], justify="left", frame_corner_radius=5, command=method_change)
     def addinstance_fr(self, name, version, icon):
         name = name.lstrip()
@@ -2487,6 +2753,8 @@ class Argon(ct.CTk):
             method = "forge"
             typee = "release"
         elif version.startswith("Fabric"):
+            if not os.path.exists("instances/"):
+                os.mkdir("instances")
             os.mkdir("instances/"+name)
             os.chdir("instances/"+name)
             os.mkdir("mods")
@@ -2559,8 +2827,6 @@ class Argon(ct.CTk):
         with open("launcherProfiles.json", "w") as js_write:
             json.dump(data, js_write, indent=4)
         self.addInstance_window.withdraw()
-        
-        msg.CTkMessagebox(title="Instance added", message=f"Instance '{name}' has been added successfully.", icon="info")
         self.refresh_instances()
 
         
@@ -2759,7 +3025,8 @@ class Argon(ct.CTk):
                 RPC.update(state=f"In the launcher", large_image="large", small_image="small", large_text="launcher")
             os.chdir(currn_dir)
             self.deiconify()
-
+            self.refresh_instances()
+    # Minecraft Launch logic
     def launch_mc(self):
         
         '''Runs minecraft with the specified settings'''
@@ -2775,7 +3042,10 @@ class Argon(ct.CTk):
         self.detected_ver = ""
         self.runtime_ver = data["selected-version"]
         if discordConnected == True:
-            RPC.update(state=f"Playing Minecraft {self.runtime_ver}", large_image="large", small_image="small", large_text="Minecraft")
+            try:
+                RPC.update(state=f"Playing Minecraft {self.runtime_ver}", large_image="large", small_image="small", large_text="Minecraft")
+            except:
+                pass
 
         with open("settings.json", "r") as js_read1:
             self.s1 = js_read1.read()
@@ -2836,6 +3106,662 @@ class Argon(ct.CTk):
             data = json.loads(s)
 
         os.chdir(mc_dir)
+        if self.login_method == "Microsoft":
+            self.options = {
+                "username": username,
+                "uuid": uid,
+                "token": accessToken,
+                "jvmArguments": self.j1,
+                "executablePath": javaPath,
+            }
+            selected_instance = str(data["selected-instance"])
+            if self.runtime_ver.startswith("vanilla"):
+                try:
+                    # Get the selected version
+                    if data["selected-version"].startswith("vanilla snapshot"):
+                        self.mc_ver = str(data["selected-version"]).removeprefix("vanilla ")
+                    else:
+                        self.mc_ver = str(data["selected-version"]).strip("vanilla ")
+                    self.detected_ver = ""
+                    if self.mc_ver.startswith("release"):
+                        self.detected_ver = self.mc_ver.strip("release ")
+                    else:
+                        self.detected_ver = str(data["selected-version"]).removeprefix("vanilla snapshot ")
+
+
+                    self.withdraw()
+                    self.minecraft_command = mc.command.get_minecraft_command(self.detected_ver, self.mc_dir, self.options)
+                    start_time = time.time()
+                    print(f"Launching Minecraft {self.mc_ver}")
+                    command = subprocess.Popen(
+                        self.minecraft_command,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.STDOUT,  # Combine stderr with stdout
+                        text=True  # Decode output as text
+                    )
+                    try:
+                        last_line = None
+                        log = ""
+                        for line in command.stdout:
+                            print(line, end='')
+                            log += line + "\n"
+                            last_line = line
+
+                        minecraft_log = log
+                        command.wait()
+
+                    except Exception as e:
+                        print("error", e)
+                    elapsed_time = time.time() - start_time
+                    elapsed_time = int(str(elapsed_time).split(".")[0])
+                    print("Minecraft ran for", time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))
+                    playTime.addTime(selected_instance, time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))
+                    '''Get crash report if it exists '''
+                    if last_line.startswith("#@!@# Game crashed!"):
+                        print("Game crashed! Getting crash report...")
+                        match = regex.search(r"[A-Za-z]:\\[^\n]+", last_line)
+                        if match:
+                            crash_report_path = match.group()
+                        else:
+                            print("Failed to get crash report path")
+                            crash_report_path = None
+                        with open(crash_report_path, "r", encoding="utf8") as f:
+                            crash_report = f.read()
+                        self.showErrorWindow(crash_report, minecraft_log)
+                    else:
+                        pass
+                except:
+                    print("VERSION NOT DOWNLOADED")
+                    if connected == True:
+                        self.handle_download(self.runtime_ver)
+                    else:
+                        msg.CTkMessagebox(title="Error", message=f"Version {self.runtime_ver} not downloaded.", icon="cancel")
+            elif self.runtime_ver.startswith("fabric"):
+                self.lv = get_latest_loader_version()
+                print(data["selected-instance"])
+                try:
+                    self.mc_ver = str(data["selected-version"]).partition(" ")[2]
+                    self.detected_ver = ""
+                    if self.mc_ver.startswith("release"):
+                        self.detected_ver = self.mc_ver.strip("release ")
+                    elif self.mc_ver.startswith("snapshot"):
+                        self.detected_ver = self.mc_ver.partition(' ')[2]
+                    self.v1 = self.detected_ver 
+                    self.detected_ver = f"fabric-loader-{self.lv}-{self.v1}"
+                    
+
+                    if os_name == "Windows":
+                        selected_instanceDIR = currn_dir + "\\instances\\" + selected_instance + "\\mods"
+                    else:
+                        selected_instanceDIR = currn_dir + "/instances/" + selected_instance + "/mods" 
+                    instanceHasMods = False
+                    if mods.Manager.doesInstanceHaveMods(selected_instanceDIR):
+                        instanceHasMods = True
+                        mods.Manager.transferModsOnRun(selected_instanceDIR, self.mc_dir)
+                    else:
+                        pass
+                    self.withdraw()
+                    self.minecraft_command = mc.command.get_minecraft_command(self.detected_ver, self.mc_dir, self.options)
+                    print(self.detected_ver)
+                    print(f"Launching Minecraft {self.mc_ver}")
+                    start_time = time.time()
+                    command = subprocess.Popen(
+                        self.minecraft_command,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.STDOUT,  # Combine stderr with stdout
+                        text=True  # Decode output as text
+                    )
+                    try:
+                        last_line = None
+                        log = ""
+                        for line in command.stdout:
+                            print(line, end='')
+                            log += line + "\n"
+                            last_line = line
+
+                        minecraft_log = log
+                        command.wait()
+                    except:
+                        pass
+                    elapsed_time = time.time() - start_time
+                    elapsed_time = int(str(elapsed_time).split(".")[0])
+                    print("Minecraft ran for", time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))
+                    print(data["selected-instance"])
+                    playTime.addTime(data["selected-instance"], time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))
+                    if instanceHasMods:
+                        mods.Manager.transferFilesBack(selected_instanceDIR, self.mc_dir)
+                    else:
+                        pass
+                    '''Get crash report if it exists '''
+                    if last_line.startswith("#@!@# Game crashed!"):
+                        print("Game crashed! Getting crash report...")
+                        match = regex.search(r"[A-Za-z]:\\[^\n]+", last_line)
+                        if match:
+                            crash_report_path = match.group()
+                        else:
+                            print("Failed to get crash report path")
+                            crash_report_path = None
+                        with open(crash_report_path, "r", encoding="utf8") as f:
+                            crash_report = f.read()
+                        self.showErrorWindow(crash_report, minecraft_log)
+                    else:
+                        pass
+                except mc.exceptions.VersionNotFound as e:
+                    if connected == True:
+                        self.handle_download(self.runtime_ver)
+                    else:
+                        msg.CTkMessagebox(title="Error", message=f"Version {self.runtime_ver} not downloaded.", icon="cancel")
+            elif self.runtime_ver.startswith("forge"):
+                try:
+                    #get version name
+                    self.mc_ver = data["selected-version"].strip("forge release ")
+                    parts = self.mc_ver.split('-')
+                    
+                    self.detected_ver1 = f"{parts[0]}-forge-{parts[1]}"
+                    if len(parts) < 2:
+                        self.detected_ver = self.mc_ver
+                    
+
+                    selected_instance = data["selected-instance"]
+                    if os_name == "Windows":
+                        selected_instanceDIR = currn_dir + "\\instances\\" + selected_instance + "\\mods"
+                    else:
+                        selected_instanceDIR = currn_dir + "/instances/" + selected_instance + "/mods"
+                    instanceHasMods = False
+                    # fix this
+                    if mods.Manager.doesInstanceHaveMods(selected_instanceDIR):
+                        instanceHasMods = True
+                        mods.Manager.transferModsOnRun(selected_instanceDIR, self.mc_dir)
+                    else:
+                        pass
+                    self.withdraw()
+                    self.minecraft_command = mc.command.get_minecraft_command(self.detected_ver, self.mc_dir, self.options)
+                    print(self.detected_ver)
+                    print(f"Launching Minecraft {self.mc_ver}")
+                    start_time = time.time()
+                    command = subprocess.Popen(
+                        self.minecraft_command,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.STDOUT,  # Combine stderr with stdout
+                        text=True  # Decode output as text
+                    )
+                    try:
+                        last_line = None
+                        log = ""
+                        for line in command.stdout:
+                            print(line, end='')
+                            log += line + "\n"
+                            last_line = line
+
+                        minecraft_log = log
+                        command.wait()
+                    except:
+                        pass
+                    elapsed_time = time.time() - start_time
+                    elapsed_time = int(str(elapsed_time).split(".")[0])
+                    print("Minecraft ran for", time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))
+                    playTime.addTime(selected_instance, time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))
+                    if instanceHasMods:
+                        mods.Manager.transferFilesBack(selected_instanceDIR, self.mc_dir)
+                    else:
+                        pass
+                    '''Get crash report if it exists '''
+                    if last_line.startswith("#@!@# Game crashed!"):
+                        print("Game crashed! Getting crash report...")
+                        match = regex.search(r"[A-Za-z]:\\[^\n]+", last_line)
+                        if match:
+                            crash_report_path = match.group()
+                        else:
+                            print("Failed to get crash report path")
+                            crash_report_path = None
+                        with open(crash_report_path, "r", encoding="utf8") as f:
+                            crash_report = f.read()
+                        self.showErrorWindow(crash_report, minecraft_log)
+                    else:
+                        pass
+                except mc.exceptions.VersionNotFound as e:
+                    if connected == True:
+                        self.handle_download(self.runtime_ver)
+                    else:
+                        msg.CTkMessagebox(title="Error", message=f"Version {self.runtime_ver} not downloaded.", icon="cancel")
+        
+        elif self.login_method == "ElyBy":
+            if not os_name.lower=="windows":
+                self.j2 = [r"-javaagent:{}/authlib/".format(currn_dir) + "" + f"authlib-injector-1.2.7.jar=ely.by", f"-Xmx{int(self.ram_mb)}M", "-Xms128M"]
+            self.options = {
+                "username": data["User-info"][0]["username"],
+                "uuid": data["User-info"][0]["UUID"],
+                "token": "",
+                "jvmArguments": self.j2,
+                "executablePath": javaPath,
+            }
+            selected_instance = data["selected-instance"]
+            if self.runtime_ver.startswith("vanilla"):
+                try:
+                    if data["selected-version"] == "vanilla snapshot":
+                        self.mc_ver = str(data["selected-version"]).removeprefix("vanilla ")
+                        self.detected_ver = str(data["selected-version"]).removeprefix("vanilla snapshot ")
+                    else:
+                        self.mc_ver = str(data["selected-version"]).strip("vanilla ")
+                    self.detected_ver = ""
+                    if self.mc_ver.startswith("release"):
+                        self.detected_ver = self.mc_ver.strip("release ")
+
+                    self.withdraw()
+                    self.minecraft_command = mc.command.get_minecraft_command(self.detected_ver, self.mc_dir, self.options)
+                    print(f"Launching Minecraft {self.mc_ver}")
+                    start_time = time.time()
+                    command = subprocess.Popen(
+                        self.minecraft_command,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.STDOUT,  # Combine stderr with stdout
+                        text=True  # Decode output as text
+                    )
+                    try:
+                        last_line = None
+                        log = ""
+                        for line in command.stdout:
+                            print(line, end='')
+                            log += line + "\n"
+                            last_line = line
+
+                        minecraft_log = log
+                        command.wait()
+                    except:
+                        pass
+                    elapsed_time = time.time() - start_time
+                    elapsed_time = int(str(elapsed_time).split(".")[0])
+                    print("Minecraft ran for", time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))
+                    playTime.addTime(selected_instance, time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))
+                    #Get crash report if it exists
+                    if last_line.startswith("#@!@# Game crashed!"):
+                        print("Game crashed! Getting crash report...")
+                        match = regex.search(r"[A-Za-z]:\\[^\n]+", last_line)
+                        if match:
+                            crash_report_path = match.group()
+                        else:
+                            print("Failed to get crash report path")
+                            crash_report_path = None
+                        with open(crash_report_path, "r", encoding="utf8") as f:
+                            crash_report = f.read()
+                        self.showErrorWindow(crash_report, minecraft_log)
+                    else:
+                        pass
+                except mc.exceptions.VersionNotFound as e:
+                    if connected == True:
+                        self.handle_download(self.runtime_ver)
+                    else:
+                        msg.CTkMessagebox(title="Error", message=f"Version {self.runtime_ver} not downloaded.", icon="cancel")
+
+            elif self.runtime_ver.startswith("fabric"):
+                try:
+                    self.mc_ver = str(data["selected-version"]).partition(" ")[2]
+                    self.detected_ver = ""
+                    if self.mc_ver.startswith("release"):
+                        self.detected_ver = self.mc_ver.strip("release ")
+                    elif self.mc_ver.startswith("snapshot"):
+                        self.detected_ver = self.mc_ver.partition(' ')[2]
+
+                    self.v1 = self.detected_ver
+                    self.detected_ver2 = f"fabric-loader-{self.lv}-{self.v1}"
+                    
+
+                    if os_name == "Windows":
+                        selected_instanceDIR = currn_dir + "\\instances\\" + selected_instance + "\\mods"
+                    else:
+                        selected_instanceDIR = currn_dir + "/instances/" + selected_instance + "/mods"
+                    instanceHasMods = False
+                    if mods.Manager.doesInstanceHaveMods(selected_instanceDIR):
+                        instanceHasMods = True
+                        mods.Manager.transferModsOnRun(selected_instanceDIR, self.mc_dir)
+                    else:
+                        pass
+                    self.withdraw()
+                    self.minecraft_command = mc.command.get_minecraft_command(self.detected_ver2, self.mc_dir, self.options)
+                    print(self.detected_ver)
+                    print(f"Launching Minecraft {self.mc_ver}")
+                    start_time = time.time()
+                    command = subprocess.Popen(
+                        self.minecraft_command,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.STDOUT,  # Combine stderr with stdout
+                        text=True  # Decode output as text
+                    )
+                    try:
+                        last_line = None
+                        log = ""
+                        for line in command.stdout:
+                            print(line, end='')
+                            log += line + "\n"
+                            last_line = line
+
+                        minecraft_log = log
+                        command.wait()
+                    except:
+                        pass
+                    elapsed_time = time.time() - start_time
+                    elapsed_time = int(str(elapsed_time).split(".")[0])
+                    print("Minecraft ran for", time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))
+                    playTime.addTime(selected_instance, time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))
+                    if instanceHasMods:
+                        mods.Manager.transferFilesBack(selected_instanceDIR, self.mc_dir)
+                    else:
+                        pass
+                    #Get crash report if it exists
+                    if last_line.startswith("#@!@# Game crashed!"):
+                        print("Game crashed! Getting crash report...")
+                        match = regex.search(r"[A-Za-z]:\\[^\n]+", last_line)
+                        if match:
+                            crash_report_path = match.group()
+                        else:
+                            print("Failed to get crash report path")
+                            crash_report_path = None
+                        with open(crash_report_path, "r", encoding="utf8") as f:
+                            crash_report = f.read()
+                        self.showErrorWindow(crash_report, minecraft_log)
+                    else:
+                        pass
+                except mc.exceptions.VersionNotFound as e:
+                    if connected == True:
+                        self.handle_download(self.runtime_ver)
+                    else:
+                        msg.CTkMessagebox(title="Error", message=f"Version {self.runtime_ver} not downloaded.", icon="cancel")
+            
+            elif self.runtime_ver.startswith("forge"):
+                try:
+
+                    self.mc_ver = data["selected-version"].strip("forge release ")
+                    parts = self.mc_ver.split('-')
+                    self.detected_ver1 = f"{parts[0]}-forge-{parts[1]}"
+                    if os_name == "Windows":
+                        selected_instanceDIR = currn_dir + "\\instances\\" + selected_instance + "\\mods"
+                    else:
+                        selected_instanceDIR = currn_dir + "/instances/" + selected_instance + "/mods"
+                    instanceHasMods = False
+                    if mods.Manager.doesInstanceHaveMods(selected_instanceDIR):
+                        instanceHasMods = True
+                        mods.Manager.transferModsOnRun(selected_instanceDIR, self.mc_dir)
+                    else:
+                        pass
+                    self.withdraw()
+                    self.minecraft_command = mc.command.get_minecraft_command(self.detected_ver1, self.mc_dir, self.options)
+                    print(self.detected_ver)
+                    print(f"Launching Minecraft {self.mc_ver}")
+                    start_time = time.time()
+                    command = subprocess.Popen(
+                        self.minecraft_command,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.STDOUT,  # Combine stderr with stdout
+                        text=True  # Decode output as text
+                    )
+                    try:
+                        last_line = None
+                        log = ""
+                        for line in command.stdout:
+                            print(line, end='')
+                            log += line + "\n"
+                            last_line = line
+
+                        minecraft_log = log
+                        command.wait()
+                    except:
+                        pass
+                    elapsed_time = time.time() - start_time
+                    elapsed_time = int(str(elapsed_time).split(".")[0])
+                    print("Minecraft ran for", time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))
+                    playTime.addTime(selected_instance, time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))
+                    if instanceHasMods:
+                        mods.Manager.transferFilesBack(selected_instanceDIR, self.mc_dir)
+                    else:
+                        pass
+                    #Get crash report if it exists 
+                    if last_line.startswith("#@!@# Game crashed!"):
+                        print("Game crashed! Getting crash report...")
+                        match = regex.search(r"[A-Za-z]:\\[^\n]+", last_line)
+                        if match:
+                            crash_report_path = match.group()
+                        else:
+                            print("Failed to get crash report path")
+                            crash_report_path = None
+                        with open(crash_report_path, "r", encoding="utf8") as f:
+                            crash_report = f.read()
+                        self.showErrorWindow(crash_report, minecraft_log)
+                    else:
+                        pass
+                except mc.exceptions.VersionNotFound as e:
+                    if connected == True:
+                        self.handle_download(self.runtime_ver)
+                    else:
+                        msg.CTkMessagebox(title="Error", message=f"Version {self.runtime_ver} not downloaded.", icon="cancel")
+
+        elif self.login_method == "Offline":
+            self.options = {
+                "username": data["User-info"][0]["username"],
+                "uuid": data["User-info"][0]["UUID"],
+                "token": "",
+                "jvmArguments": self.j1,
+                "executablePath": javaPath,
+            }
+            selected_instance = data["selected-instance"]
+            if self.runtime_ver.startswith("vanilla"):
+                try:
+                    if data["selected-version"] == "vanilla snapshot":
+                        self.mc_ver = str(data["selected-version"]).strip("vanilla ")
+                        self.detected_ver = str(data["selected-version"]).removeprefix("vanilla snapshot ")
+                    else:
+                        self.mc_ver = str(data["selected-version"]).strip("vanilla ")
+                    self.detected_ver = ""
+                    if self.mc_ver.startswith("release"):
+                        self.detected_ver = self.mc_ver.strip("release ")
+                    elif self.mc_ver.startswith("snapshot"):
+                        self.detected_ver = self.mc_ver.partition(' ')[2]
+                    self.withdraw()
+                    self.minecraft_command = mc.command.get_minecraft_command(self.detected_ver, self.mc_dir, self.options)
+                    print(self.detected_ver)
+
+                    print(f"Launching Minecraft {self.mc_ver}")
+                    start_time = time.time()
+                    command = subprocess.Popen(
+                        self.minecraft_command,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.STDOUT,  # Combine stderr with stdout
+                        text=True  # Decode output as text
+                    )
+                    try:
+                        last_line = None
+                        log = ""
+                        for line in command.stdout:
+                            print(line, end='')
+                            log += line + "\n"
+                            last_line = line
+
+                        minecraft_log = log
+                        command.wait()
+                    except:
+                        pass
+                    elapsed_time = time.time() - start_time
+                    elapsed_time = int(str(elapsed_time).split(".")[0])
+                    print("Minecraft ran for", time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))
+                    playTime.addTime(selected_instance, time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))
+                    #Get crash report if it exists
+                    if last_line.startswith("#@!@# Game crashed!"):
+                        print("Game crashed! Getting crash report...")
+                        match = regex.search(r"[A-Za-z]:\\[^\n]+", last_line)
+                        if match:
+                            crash_report_path = match.group()
+                        else:
+                            print("Failed to get crash report path")
+                            crash_report_path = None
+                        with open(crash_report_path, "r", encoding="utf8") as f:
+                            crash_report = f.read()
+                        self.showErrorWindow(crash_report, minecraft_log)
+                    else:
+                        pass
+                except mc.exceptions.VersionNotFound as e:
+                    if connected == True:
+                        self.handle_download(self.runtime_ver)
+                    else:
+                        msg.CTkMessagebox(title="Error", message=f"Version {self.runtime_ver} not downloaded.", icon="cancel")
+            elif self.runtime_ver.startswith("fabric"):
+                try:
+                    if data["selected-version"] == "vanilla snapshot":
+                            self.mc_ver = str(data["selected-version"]).partition(" ")[2]
+                    else:
+                        self.mc_ver = str(data["selected-version"]).strip("vanilla ")
+                    self.detected_ver = ""
+                    if self.mc_ver.startswith("release"):
+                        self.detected_ver = self.mc_ver.strip("release ")
+                    elif self.mc_ver.startswith("snapshot"):
+                        self.detected_ver = self.mc_ver.partition(' ')[2]
+ 
+                    self.mc_ver = str(data["selected-version"]).partition(" ")[2]
+                    self.detected_ver = ""
+                    if self.mc_ver.startswith("release"):
+                        self.detected_ver = self.mc_ver.strip("release ")
+                    elif self.mc_ver.startswith("snapshot"):
+                        self.detected_ver = self.mc_ver.partition(' ')[2]
+
+                    self.v1 = self.detected_ver
+                    self.detected_ver2 = f"fabric-loader-{self.lv}-{self.v1}"
+                    if os_name == "Windows":
+                        selected_instanceDIR = currn_dir + "\\instances\\" + selected_instance + "\\mods"
+                    else:
+                        selected_instanceDIR = currn_dir + "/instances/" + selected_instance + "/mods"
+                    instanceHasMods = False
+                    if mods.Manager.doesInstanceHaveMods(selected_instanceDIR):
+                        instanceHasMods = True
+                        mods.Manager.transferModsOnRun(selected_instanceDIR, self.mc_dir)
+                    else:
+                        pass
+                    self.withdraw()
+                    self.minecraft_command = mc.command.get_minecraft_command(self.detected_ver2, self.mc_dir, self.options)
+                    print(self.detected_ver)
+                    print(f"Launching Minecraft {self.mc_ver}")
+                    start_time = time.time()
+                    command = subprocess.Popen(
+                        self.minecraft_command,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.STDOUT,  # Combine stderr with stdout
+                        text=True  # Decode output as text
+                    )
+                    try:
+                        last_line = None
+                        log = ""
+                        for line in command.stdout:
+                            print(line, end='')
+                            log += line + "\n"
+                            last_line = line
+
+                        minecraft_log = log
+                        command.wait()
+                    except:
+                        pass
+                    elapsed_time = time.time() - start_time
+                    elapsed_time = int(str(elapsed_time).split(".")[0])
+                    print("Minecraft ran for", time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))
+                    playTime.addTime(selected_instance, time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))
+                    if instanceHasMods:
+                        mods.Manager.transferFilesBack(selected_instanceDIR, self.mc_dir)
+                    else:
+                        pass
+                    #Get crash report if it exists
+                    if last_line.startswith("#@!@# Game crashed!"):
+                        print("Game crashed! Getting crash report...")
+                        match = regex.search(r"[A-Za-z]:\\[^\n]+", last_line)
+                        if match:
+                            crash_report_path = match.group()
+                        else:
+                            print("Failed to get crash report path")
+                            crash_report_path = None
+                        with open(crash_report_path, "r", encoding="utf8") as f:
+                            crash_report = f.read()
+                        self.showErrorWindow(crash_report, minecraft_log)
+                    else:
+                        pass
+                except mc.exceptions.VersionNotFound as e:
+                    if connected == True:
+                        self.handle_download(self.runtime_ver)
+                    else:
+                        msg.CTkMessagebox(title="Error", message=f"Version {self.runtime_ver} not downloaded.", icon="cancel")
+
+            elif self.runtime_ver.startswith("forge"):
+                try:
+                    if data["selected-version"] == "vanilla snapshot":
+                            self.mc_ver = str(data["selected-version"]).partition(" ")[2]
+                    else:
+                        self.mc_ver = str(data["selected-version"]).strip("vanilla ")
+                    self.detected_ver = ""
+                    if self.mc_ver.startswith("release"):
+                        self.detected_ver = self.mc_ver.strip("release ")
+                    elif self.mc_ver.startswith("snapshot"):
+                        self.detected_ver = self.mc_ver.partition(' ')[2]
+
+                    self.mc_ver = data["selected-version"].strip("forge release ")
+                    parts = self.mc_ver.split('-')
+                    self.detected_ver1 = f"{parts[0]}-forge-{parts[1]}"
+                    if os_name == "Windows":
+                        selected_instanceDIR = currn_dir + "\\instances\\" + selected_instance + "\\mods"
+                    else:
+                        selected_instanceDIR = currn_dir + "/instances/" + selected_instance + "/mods"
+                    if mods.Manager.doesInstanceHaveMods(selected_instanceDIR):
+                        instanceHasMods = True
+                        print("Transferring mods from instance to Minecraft")
+                        mods.Manager.transferModsOnRun(selected_instanceDIR, self.mc_dir)
+                    else:
+                        pass
+                    self.withdraw()
+                    self.minecraft_command = mc.command.get_minecraft_command(self.detected_ver1, self.mc_dir, self.options)
+                    print(self.detected_ver)
+                    print(f"Launching Minecraft {self.mc_ver}")
+                    start_time = time.time()
+                    command = subprocess.Popen(
+                        self.minecraft_command,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.STDOUT,  # Combine stderr with stdout
+                        text=True  # Decode output as text
+                    )
+                    try:
+                        last_line = None
+                        log = ""
+                        for line in command.stdout:
+                            print(line, end='')
+                            log += line + "\n"
+                            last_line = line
+
+                        minecraft_log = log
+                        command.wait()
+                    except:
+                        pass
+                    elapsed_time = time.time() - start_time
+                    elapsed_time = int(str(elapsed_time).split(".")[0])
+                    print("Minecraft ran for", time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))
+                    playTime.addTime(selected_instance, time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))
+                    if instanceHasMods:
+                        mods.Manager.transferFilesBack(selected_instanceDIR, self.mc_dir)
+                    else:
+                        pass
+                    #Get crash report if it exists
+                    if last_line.startswith("#@!@# Game crashed!"):
+                        print("Game crashed! Getting crash report...")
+                        match = regex.search(r"[A-Za-z]:\\[^\n]+", last_line)
+                        if match:
+                            crash_report_path = match.group()
+                        else:
+                            print("Failed to get crash report path")
+                            crash_report_path = None
+                        with open(crash_report_path, "r", encoding="utf8") as f:
+                            crash_report = f.read()
+                        self.showErrorWindow(crash_report, minecraft_log)
+                    else:
+                        pass
+                except mc.exceptions.VersionNotFound as e:
+                    if connected == True:
+                        self.handle_download(self.runtime_ver)
+                    else:
+                        msg.CTkMessagebox(title="Error", message=f"Version {self.runtime_ver} not downloaded.", icon="cancel")
+
+
+        '''
         if self.runtime_ver.startswith("vanilla"):
             if self.login_method == "Microsoft":
                 try:
@@ -2852,9 +3778,9 @@ class Argon(ct.CTk):
                     
                     refresh_token = data["Microsoft-settings"][0]["refresh_token"]
                     self.options = {
-                        "username": msaoptions["username"],
-                        "uuid": msaoptions["uuid"],
-                        "token": msaoptions["token"],
+                        "username": username,
+                        "uuid": uid,
+                        "token": accessToken,
                         "jvmArguments": self.j1,
                         "executablePath": javaPath,
                     }
@@ -2888,7 +3814,7 @@ class Argon(ct.CTk):
                     elapsed_time = int(str(elapsed_time).split(".")[0])
                     print("Minecraft ran for", time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))
                     playTime.addTime(selected_instance, time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))
-                    '''Get crash report if it exists '''
+                    #Get crash report if it exists
                     if last_line.startswith("#@!@# Game crashed!"):
                         print("Game crashed! Getting crash report...")
                         match = regex.search(r"[A-Za-z]:\\[^\n]+", last_line)
@@ -2955,7 +3881,7 @@ class Argon(ct.CTk):
                     elapsed_time = int(str(elapsed_time).split(".")[0])
                     print("Minecraft ran for", time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))
                     playTime.addTime(selected_instance, time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))
-                    '''Get crash report if it exists '''
+                    #Get crash report if it exists
                     if last_line.startswith("#@!@# Game crashed!"):
                         print("Game crashed! Getting crash report...")
                         match = regex.search(r"[A-Za-z]:\\[^\n]+", last_line)
@@ -3022,7 +3948,7 @@ class Argon(ct.CTk):
                     elapsed_time = int(str(elapsed_time).split(".")[0])
                     print("Minecraft ran for", time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))
                     playTime.addTime(selected_instance, time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))
-                    '''Get crash report if it exists '''
+                    #Get crash report if it exists
                     if last_line.startswith("#@!@# Game crashed!"):
                         print("Game crashed! Getting crash report...")
                         match = regex.search(r"[A-Za-z]:\\[^\n]+", last_line)
@@ -3101,7 +4027,7 @@ class Argon(ct.CTk):
                         mods.Manager.transferFilesBack(selected_instanceDIR, self.mc_dir)
                     else:
                         pass
-                    '''Get crash report if it exists '''
+                    #Get crash report if it exists
                     if last_line.startswith("#@!@# Game crashed!"):
                         print("Game crashed! Getting crash report...")
                         match = regex.search(r"[A-Za-z]:\\[^\n]+", last_line)
@@ -3177,7 +4103,7 @@ class Argon(ct.CTk):
                         mods.Manager.transferFilesBack(selected_instanceDIR, self.mc_dir)
                     else:
                         pass
-                    '''Get crash report if it exists '''
+                    #Get crash report if it exists 
                     if last_line.startswith("#@!@# Game crashed!"):
                         print("Game crashed! Getting crash report...")
                         match = regex.search(r"[A-Za-z]:\\[^\n]+", last_line)
@@ -3261,7 +4187,7 @@ class Argon(ct.CTk):
                         mods.Manager.transferFilesBack(selected_instanceDIR, self.mc_dir)
                     else:
                         pass
-                    '''Get crash report if it exists '''
+                    #Get crash report if it exists
                     if last_line.startswith("#@!@# Game crashed!"):
                         print("Game crashed! Getting crash report...")
                         match = regex.search(r"[A-Za-z]:\\[^\n]+", last_line)
@@ -3346,7 +4272,7 @@ class Argon(ct.CTk):
                         mods.Manager.transferFilesBack(selected_instanceDIR, self.mc_dir)
                     else:
                         pass
-                    '''Get crash report if it exists '''
+                    #Get crash report if it exists 
                     if last_line.startswith("#@!@# Game crashed!"):
                         print("Game crashed! Getting crash report...")
                         match = regex.search(r"[A-Za-z]:\\[^\n]+", last_line)
@@ -3429,7 +4355,7 @@ class Argon(ct.CTk):
                         mods.Manager.transferFilesBack(selected_instanceDIR, self.mc_dir)
                     else:
                         pass
-                    '''Get crash report if it exists '''
+                    #Get crash report if it exists
                     if last_line.startswith("#@!@# Game crashed!"):
                         print("Game crashed! Getting crash report...")
                         match = regex.search(r"[A-Za-z]:\\[^\n]+", last_line)
@@ -3519,7 +4445,7 @@ class Argon(ct.CTk):
                         mods.Manager.transferFilesBack(selected_instanceDIR, self.mc_dir)
                     else:
                         pass
-                    '''Get crash report if it exists '''
+                    #Get crash report if it exists
                     if last_line.startswith("#@!@# Game crashed!"):
                         print("Game crashed! Getting crash report...")
                         match = regex.search(r"[A-Za-z]:\\[^\n]+", last_line)
@@ -3538,6 +4464,7 @@ class Argon(ct.CTk):
                         self.handle_download(self.runtime_ver)
                     else:
                         msg.CTkMessagebox(title="Error", message=f"Version {self.runtime_ver} not downloaded.", icon="cancel")
+            '''
         os.chdir(currn_dir)
             
         
@@ -3577,6 +4504,7 @@ class Argon(ct.CTk):
         self.showFullLog_btn.place(x=250, y=470)
         self.copyLog_btn = ct.CTkButton(self.error_window, text="Copy Log", font=ct.CTkFont(size=15, family=argonFont), command=lambda: self.copyToClipboard(minecraft_log), height=30, width=80, corner_radius=5, anchor="center")
         self.copyLog_btn.place(x=20, y=470)
+
     def ely_authenticate(self):
         '''Connects to ely.by for user authorization'''
 
@@ -3594,7 +4522,7 @@ class Argon(ct.CTk):
 
         self.r = requests.get(f"https://authserver.ely.by/api/users/profiles/minecraft/{self.usr}")
         if self.r.status_code == 200:
-            print("[ElyBy]", "User found, getting details........")
+            print("[ElyBy]", "User found, getting details...")
             self.r1 = requests.post(f"https://authserver.ely.by/auth/authenticate", data=self.acc_data)
             if self.r1.status_code == 200:
                 self.accessToken = self.r1.json()["accessToken"]
@@ -3623,66 +4551,86 @@ class Argon(ct.CTk):
         elif self.r.status_code == 404:
             print("[ERROR] 404", "User does not exist.")
             msg.CTkMessagebox(title="User not found", message=f"The specified user does not exist. Error code: {self.r.status_code}", icon="cancel")
-    
-class SplashScreen(ct.CTk):
+
+class LoadArgon(ct.CTk):
     def __init__(self):
         super().__init__()
-        self.title("Argon")
-        width_of_window = 500
-        height_of_window = 281
-        screen_width = self.winfo_screenwidth()
-        screen_height = self.winfo_screenheight()
-        x_coordinate = (screen_width/2) - (width_of_window/2)
-        y_coordinate = (screen_height/2) - (height_of_window/2)
-        self.geometry("%dx%d+%d+%d" % (width_of_window, height_of_window, x_coordinate, y_coordinate))
-        self.resizable(False, False)
-        def passs():
+        try:
+            self.tk.call("proc", "bgerror", "args", "return")
+        except Exception:
             pass
-        self.protocol("WM_DELETE_WINDOW", lambda: passs())
+
+        self.alive = True
+        self._after_id = None
+        tagline = "Loading..."
+
+        self.width = 500
+        self.height = 281
+        self.title("Argon")
+        self.geometry_center()
+        self.resizable(False, False)
         self.overrideredirect(True)
         self.attributes("-topmost", True)
-        self.grab_set()
+        self.configure(fg_color="#101010")
 
-        self.after(200, lambda: self.iconbitmap("img/icon.ico"))
+        self.logo = ct.CTkImage(
+            dark_image=Image.open("img/argon.png"),
+            light_image=Image.open("img/argon.png"),
+            size=(240, 80)
+        )
+        self.logo_label = ct.CTkLabel(self, image=self.logo, text="", bg_color="transparent")
+        self.logo_label.place(relx=0.5, rely=0.45, anchor="center")
 
-        splash_num = random.randint(1, 5)
-        if splash_num == 1:
-            bg_var = "#fdfdfd"
-            color_var = "white"
-        elif splash_num == 2:
-            bg_var = "#fdfdfd"
-            color_var = "white"
-        elif splash_num == 3:
-            bg_var = "#fdfdfd"
-            color_var = "white"
-        elif splash_num == 4:
-            splash_num = 5
-            bg_var = "#f1f1f1"
-            color_var = "white"
-        elif splash_num == 5:
-            bg_var = "#f1f1f1"
-            color_var = "white"
-        self.bg = ct.CTkImage(dark_image=Image.open(f"img/splashes/{splash_num}.png"), light_image=Image.open(f"img/splashes/{splash_num}.png"), size=(500, 281))
-        self.bg_label = ct.CTkLabel(self, image=self.bg, text="")
-        self.bg_label.place(x=0, y=0)
+        self.tagline = ct.CTkLabel(
+            self,
+            text=tagline,
+            font=ct.CTkFont(size=16, weight="normal", family="Inter"),
+            text_color="#AAAAAA"
+        )
+        self.tagline.place(relx=0.5, rely=0.65, anchor="center")
+        '''
+        try:
+            if updater.check_for_updates():
+                self.tagline.configure(text="Update available! Installing...")
+                updater.download_update()
+                updater.restartArgon()
+        except Exception as e:
+            print(f"Error during update check: {e}")
+            self.tagline.configure(text="Error checking for updates. Proceeding...")'''
 
-        self.logo = ct.CTkImage(dark_image=Image.open("img/logo.png"), light_image=Image.open("img/logo.png"), size=(100, 100))
-        self.logo_label = ct.CTkLabel(self, image=self.logo, text="", bg_color="#a9a9a9")
-        self.logo_label.place(x=40, y=80)
-        pywinstyles.set_opacity(self.logo_label, color="#a9a9a9")
 
+        self._after_id = self.after(800, self.launch_main_app)
+
+    def geometry_center(self):
+        self.withdraw() 
+        self.update_idletasks()
+
+        screen_width = self.winfo_screenwidth()
+        screen_height = self.winfo_screenheight()
+        x = int((screen_width - self.width) / 2)
         
-        self.name_label = ct.CTkLabel(self, text="Argon", font=ct.CTkFont(size=100, family=argonFont, weight="bold"), bg_color=bg_var, text_color=color_var)
-        self.name_label.place(x=160, y=65)
-
-        pywinstyles.set_opacity(self.name_label, color=bg_var)
-        def runArgon():
-            app = Argon()
-            app.mainloop()
+        y_offset = int((screen_height - self.height) / 2 * 0.8)
         
-        #argon_thread = Thread(target=runArgon, daemon=True)
-        #argon_thread.start()
+        self.geometry(f"{self.width}x{self.height}+{x}+{y_offset}")
+        self.deiconify()
+    def launch_main_app(self):
+        if not self.alive:
+            return
+        self.alive = False
+
+        if getattr(self, "_after_id", None):
+            try:
+                self.after_cancel(self._after_id)
+            except Exception:
+                pass
+            self._after_id = None
+        try:
+            self.destroy()
+        except Exception:
+            pass
+        app = Argon()
+        app.mainloop()
 
 if __name__ == "__main__":
-    app = Argon()
+    app = LoadArgon()
     app.mainloop()

@@ -77,3 +77,4 @@ As of v1.4, the macOS installer is in beta, and requires a Python installation (
 Argon is in no way affiliated with Mojang Studios, nor should it be considered a project endorsed by Mojang Studios.
 
 You may not reuse the Argon API keys and client IDs under any circumstances.
+

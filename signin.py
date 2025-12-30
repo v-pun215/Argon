@@ -7,9 +7,10 @@ from CTkMessagebox import CTkMessagebox as msg # type: ignore (My VSCode is cook
 import subprocess, sys, string, random, os
 import platform
 from pathlib import Path
-import psutil
+import psutil, datetime
+from datetime import timezone
 import minecraft_launcher_lib
-version = "1.4"
+version = "1.4.1"
 
 # Check if we're on macOS, first.
 if platform.system() == 'Darwin':
@@ -119,7 +120,8 @@ settings = {
                 ],
                 "Microsoft-settings" : [
                     {
-                        "refresh_token": None
+                        "refresh_token": None,
+                        "last_refresh": ""
                     }
                 ],
                 "Minecraft-home" : mc_dir,
@@ -361,8 +363,53 @@ class WelcomeToArgon(ct.CTk):
 
 
     def ms_login(self):
+        # create a small non-blocking "waiting" window
+        self.loading = ct.CTkToplevel(self)
+        self.loading.geometry("360x120")
+        self.loading.title("Logging in...")
+        self.loading_label = ct.CTkLabel(self.loading, text="Open browser to sign in...\nWaiting for redirect...", anchor="center")
+        self.loading_label.place(relx=0.5, rely=0.4, anchor="center")
+        # optionally block other windows input until finished:
+        self.loading.transient(self)
+        # (don't call grab_set if you want clicks outside allowed; leave it if you want modal)
+        # self.loading.grab_set()
+
+        # import and start non-blocking Authenticate
         from microsoftAuth import Authenticate
-        Authenticate()
+        Authenticate(self, self.on_ms_auth_complete)
+    def on_ms_auth_complete(self, info, error):
+        # close loading UI
+        try:
+            self.loading.destroy()
+        except Exception:
+            pass
+
+        if error:
+            # show error popup
+            msg(title="Error", message=f"Microsoft login failed: {error}", icon="cancel")
+            return
+
+        # `info` is the account_information returned by your backend
+        # update in-memory `data` (the global you already use) and write settings.json
+        try:
+            data["Microsoft-settings"][0]["refresh_token"] = info.get("refresh_token")
+
+            data["Microsoft-settings"][0]["last_refresh"] = datetime.datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+            data["User-info"][0]["AUTH_TYPE"] = "Microsoft"
+            data["User-info"][0]["username"] = info.get("name", data["User-info"][0].get("username"))
+            data["User-info"][0]["UUID"] = info.get("id", data["User-info"][0].get("UUID"))
+            data["accessToken"] = info.get("access_token", data.get("accessToken"))
+            with open("settings.json", "w") as f:
+                json.dump(data, f, indent=4)
+        except Exception as e:
+            # still continue, but show a warning
+            print("Warning: failed to write settings.json:", e)
+
+        # success popup and continue
+        msg(title="Success", message=f"Logged in as {info.get('name')}", icon="check", option_1="Ok")
+        # proceed to launcher
+        self.exit_to_argon()
+
 
 
     def ely_authenticate(self):

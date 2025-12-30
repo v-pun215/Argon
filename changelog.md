@@ -1,7 +1,9 @@
-v1.0-unstable
+# Changelog
+
+## v1.0-unstable
 Initial release
 
-v1.0-stable
+## v1.0-stable
 1. Fixed bug where deleting an instance does not delete the pinned instance (if it is pinned).
 2. Fixed bug where selecting a pinned instance (clicking it), does not actually select that instance.
 3. Added feature which allows searching versions when adding instance.
@@ -12,13 +14,13 @@ v1.0-stable
 8. Fixed a peculiar bug which does not allow transferring of mods on launch.
 9. Started working on the Argon Installer. For now, users can install using the install.py file.
 
-v1.0.1
+## v1.0.1
 1. Added a WIP label in Argon settings, this will be worked upon in coming updates.
 2. Finished an EXE installer for Argon. 
 3. Made "Bypass RAM Limiter" setting take 90% of free RAM. (This is really not recommended, use only for testing purposes.)
 4. Started working on tracking time of playing an instance.
 
-v1.1 
+## v1.1 
 1. Added playtime tracking.
 2. Added a label for displaying playtime (per instance).
 3. Added Discord Activity support. (still WIP)
@@ -26,7 +28,7 @@ v1.1
 5. Added many more instance icon options.
 6. Added new icon (clock.png) for the homepage stats
 
-v1.2
+## v1.2
 1. Fixed many bugs.
 2. Added (basic) modrinth modpack .mrpack support.
 3. Started working on a music player built into the launcher.
@@ -42,7 +44,7 @@ v1.2
 13. Quilt support is being considered.
 14. Made minor changes in the installer
 
-v1.3
+## v1.3
 1. Made UI changes in the sign in screen (also changed name from welcome.py to signin.py)
 2. Made minor UI changes in the crash report window.
 3. Added a Customization heading in the Argon settings.
@@ -52,11 +54,21 @@ v1.3
 7. Added setting options in settings.json (customBackground, theme)
 8. Now the launcher starts in System Theme.
 
-v1.4
+## v1.4
 1. Added macOS and Linux support. However, some minor features are not supported on macOS and Linux.
 2. Improved Python compatibility (3.10 - 3.13)
 3. Fixed many bugs lingering in the codebase.
 4. Fixed bugs with Fabric instances.
 5. Finally added an authentication server that hides Azure secrets.
 6. Fixed bug in Discord Presence system to make it functional again.
-7. Argon can be installed using a .sh script on macOS.
+7. Argon can be installed using a .app file on macOS.
+
+## v1.5
+1. Fixed bugs in macOS and Windows installers. On macOS, python installed with brew is now supported.
+2. Fixed many small bugs here and there.
+3. Added the Minecraft changelog + news widget back, with minimal load times!
+4. Added a splash screen while loading!
+5. Speeded up startup by not refreshing Microsoft account every launch.
+6. Optimized the startup by a lot.
+7. Introduced an update system (still very primitive)
+8. Changed backend to render for ms auth for now.

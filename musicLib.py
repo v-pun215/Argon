@@ -1,4 +1,4 @@
-# work in progress, thinking of implementing this with next update.
+# work in progress, thinking of implementing this in the next update.
 '''
 requirements:
 ytp-dl

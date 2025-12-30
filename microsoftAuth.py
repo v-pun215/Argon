@@ -1,118 +1,92 @@
-from PyQt6.QtWidgets import QApplication, QMessageBox
-from PyQt6.QtWebEngineWidgets import QWebEngineView
-from PyQt6.QtWebEngineCore import QWebEngineProfile
-from PyQt6.QtCore import QUrl, QLocale
+# microsoftAuth.py
+import threading
+import time
+import webbrowser
+from http.server import HTTPServer, BaseHTTPRequestHandler
+import requests
 import minecraft_launcher_lib
-import json
-import sys, requests
-import os
-from keys import client
 
 
-redirect = "https://eclient-done.vercel.app/"
-with open("settings.json", "r") as js_read:
-    s = js_read.read()
-    s = s.replace('\t','')  #Trailing commas in dict cause file read problems, these lines will fix it.
-    s = s.replace('\n','')  #Found this on stackoverflow.
-    s = s.replace(',}','}')
-    s = s.replace(',]',']')
-    data = json.loads(s)
-    #print(json.dumps(data, indent=4,))
+client = "9af2fafb-bfbe-4fbe-9abf-fb3fe9affc7c"
+backend = "https://argon-auth.onrender.com"
+PORT = 6942
+REDIRECT_URI = f"http://localhost:{PORT}/"
 
-os_name = data["PC-info"][0]["OS"]
-mc_home = data["Minecraft-home"]
-username = data["User-info"][0]["username"]
-cracked_password = data["User-info"][0]["cracked_password"]
-uid = data["User-info"][0]["UUID"]
-accessToken = data["accessToken"]
-mc_dir = data["Minecraft-home"]
-auth_type = data["User-info"][0]["AUTH_TYPE"]
-selected_ver = data["selected-version"]
-allocated_ram = data["settings"][0]["allocated_ram"]
-jvm_args = data["settings"][0]["jvm-args"]
-ramlimiterExceptionBypassed = data["settings"][0]["ramlimiterExceptionBypassed"]
-ramlimiterExceptionBypassedSelected = data["settings"][0]["ramlimiterExceptionBypassedSelected"]
-verbose = data["settings"][0]["verbose"]
-refresh_token = data["Microsoft-settings"][0]["refresh_token"]
 
-class LoginWindow(QWebEngineView):
-    def __init__(self):
-        super().__init__()
+def open_browser_and_listen(client_id, backend_url, timeout=180):
+    class OAuthHandler(BaseHTTPRequestHandler):
+        def do_GET(self):
+            self.server.full_path = self.path
+            html = (
+                "<html><body style='font-family: sans-serif; text-align:center; padding:30px;'>"
+                "<h2>Sign-in complete</h2>"
+                "<p>You can now close this tab. This window will attempt to close automatically.</p>"
+                "<script>setTimeout(()=>{try{window.close();}catch(e){/*ignore*/}},1200);</script>"
+                "</body></html>"
+            )
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.end_headers()
+            self.wfile.write(html.encode("utf-8"))
+            # shutdown safely
+            def _shutdown():
+                try:
+                    self.server.shutdown()
+                except Exception:
+                    pass
+            threading.Thread(target=_shutdown, daemon=True).start()
 
-        self.setWindowTitle("Login to Microsoft Account")
+        def log_message(self, format, *args):
+            return
 
-        # Set the path where the refresh token is saved
-        self.refresh_token_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "refresh_token.json")
+    try:
+        httpd = HTTPServer(("localhost", PORT), OAuthHandler)
+    except OSError as e:
+        raise RuntimeError(f"Failed to bind to localhost:{PORT} — maybe the port is in use. ({e})")
 
-        # Open the login url
-        login_url, self.state, self.code_verifier = minecraft_launcher_lib.microsoft_account.get_secure_login_data(client, redirect)
-        self.load(QUrl(login_url))
+    # ask the launcher lib for the login url
+    login_url, state, code_verifier = minecraft_launcher_lib.microsoft_account.get_secure_login_data(client_id, REDIRECT_URI)
 
-        # Connects a function that is called when the url changed
-        self.urlChanged.connect(self.new_url)
+    # run server in background
+    server_thread = threading.Thread(target=httpd.serve_forever, daemon=True)
+    server_thread.start()
 
-        self.show()
+    webbrowser.open(login_url, new=2)
 
-    def new_url(self, url: QUrl):
+    start = time.time()
+    while getattr(httpd, "full_path", None) is None:
+        if time.time() - start > timeout:
+            try:
+                httpd.shutdown()
+            except Exception:
+                pass
+            raise TimeoutError("Timed out waiting for browser redirect. Did you complete sign-in in the browser?")
+        time.sleep(0.2)
+
+    full_received_url = f"{REDIRECT_URI.rstrip('/')}{httpd.full_path}"
+    try:
+        httpd.server_close()
+    except Exception:
+        pass
+    server_thread.join(timeout=1)
+
+    # validate auth code and state
+    auth_code = minecraft_launcher_lib.microsoft_account.parse_auth_code_url(full_received_url, state)
+
+    # hand off to your backend to finish exchange
+    resp = requests.post(f"{backend_url}/complete_login", json={
+        "auth_code": auth_code,
+        "code_verifier": code_verifier
+    }, timeout=30)
+    resp.raise_for_status()
+    return resp.json()
+
+def Authenticate(tk_root, on_done, timeout=180):
+    def worker():
         try:
-            # Get the code from the url
-            auth_code = minecraft_launcher_lib.microsoft_account.parse_auth_code_url(url.toString(), self.state)
-            print("Recieved auth code: "+auth_code)
-            # Do the login
-            response = requests.post("https://argon-auth.vpun215.hackclub.app/complete_login", json={
-                "auth_code": auth_code,
-                "code_verifier": self.code_verifier
-            })
-            print("Recieved from auth: "+response.text)
-
-            account_information = response.json()
-
-            # Show the login information
-            data["Microsoft-settings"][0]["refresh_token"] = account_information["refresh_token"]
-            data["User-info"][0]["AUTH_TYPE"] = "Microsoft"
-            with open("settings.json", "w") as f:
-                json.dump(data, f, indent=4 )
-                f.close()
-            self.show_account_information(account_information)
-        except AssertionError:
-            print("States do not match!")
-        except KeyError:
-            print("Url not valid.")
-
-    def show_account_information(self, information_dict):
-        information_string = f'Username: {information_dict["name"]}<br>'
-        information_string += f'UUID: {information_dict["id"]}<br>'
-        information_string += f'Token: {information_dict["access_token"]}<br>'
-        print(information_string)
-        data["User-info"][0]["username"] = information_dict["name"]
-        data["User-info"][0]["UUID"] = information_dict["id"]
-        data["accessToken"] = information_dict["access_token"]
-        data["Microsoft-settings"][0]["refresh_token"] = information_dict["refresh_token"]
-        data["User-info"][0]["AUTH_TYPE"] = "Microsoft"
-        with open("settings.json", "w") as f:
-            json.dump(data, f, indent=4 )
-            f.close()
-
-        message_box = QMessageBox()
-        message_box.setWindowTitle("Logged In")
-        message_box.setText("You have successfully logged in, {}".format(information_dict["name"]))
-        message_box.setStandardButtons(QMessageBox.StandardButton.Ok)
-        message_box.exec()
-
-        # Close the window
-        self.destroy()
-        # Start the launcher
-        
-        
-
-def Authenticate():
-    app = QApplication(sys.argv)
-    QWebEngineProfile.defaultProfile().setHttpAcceptLanguage(QLocale.system().name().split("_")[0])
-    w = LoginWindow()
-    app.exec()
-if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    # This line sets the language of the webpage to the system language
-    QWebEngineProfile.defaultProfile().setHttpAcceptLanguage(QLocale.system().name().split("_")[0])
-    w = LoginWindow()
-    sys.exit(app.exec())
+            info = open_browser_and_listen(client, backend, timeout=timeout)
+            # schedule callback on main thread
+            tk_root.after(0, lambda: on_done(info, None))
+        except Exception as e:
+            tk_root.after(0, lambda: on_done(None, e))
+    threading.Thread(target=worker, daemon=True).start()

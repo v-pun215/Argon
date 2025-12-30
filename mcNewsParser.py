@@ -1,26 +1,24 @@
-from xml.dom.minidom import parse
-import xml.dom.minidom, os, subprocess
-import requests, json
-mcNewsHeaders = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36'}
-def get_json_file():
-    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36'}
-    try:
-        response = requests.get('https://launchercontent.mojang.com/news.json', headers=headers)
-        if response.status_code == 200:
-            with open ("mcNewsletter.json", "wb") as f:
-                f.write(response.content)
-                f.close()
+import requests
+import xml.etree.ElementTree as ET
+def get_news_list():
+    url = 'https://rss-bridge.org/bridge01/?action=display&bridge=MinecraftBridge&category=News&format=Atom'
+    response = requests.get(url)
+    xml_string = response.text
 
-            with open("mcNewsletter.json", "r") as f:
-                news = f.read()
+    root = ET.fromstring(xml_string)
+    namespace = {'atom': 'http://www.w3.org/2005/Atom'}
 
-            news = news.replace('â€™',"'")
-
-            with open("mcNewsletter.json", "w") as f:
-                f.write(news)
-                f.close()
-        else:
-            print("Minecraft News is down :(")
-    except Exception as e:
-        print("Unable to fetch MC News.")
-        print(e)
+    entries = []
+    for entry in root.findall('atom:entry', namespace):
+        title = entry.find('atom:title', namespace).text
+        content = entry.find('atom:content', namespace).text
+        link = entry.find("atom:link[@rel='alternate']", namespace).get('href')
+        image = entry.find("atom:link[@rel='enclosure']", namespace).get('href')
+        
+        entries.append({
+            'title': title,
+            'content': content,
+            'link': link,
+            'image': image
+        })
+    return entries

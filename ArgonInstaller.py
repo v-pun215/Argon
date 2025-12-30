@@ -1,5 +1,5 @@
 # This file is meant to be packaged using Pyinstaller, hence all the nuances.
-
+# this works only on Windows, dont bother running it on mac or linux for mac go to argoninstaller-mac.py and linux installer is coming soon
 '''
 The installer does these things:
 1. lets user choose install location
@@ -51,7 +51,7 @@ def resource_path(relative_path):
     return os.path.join(base_path, relative_path)    
 
 
-version = "v1.4"
+version = "v1.4.1"
 
 
 
@@ -59,8 +59,11 @@ usr_accnt = str(Path.home()).replace("\\", "/").split("/")[-1]
 mc_dir = minecraft_launcher_lib.utils.get_minecraft_directory()
 svmem = psutil.virtual_memory()
 currn_dir = os.getcwd()
-java_home = os.getenv("JAVA_HOME")+r"\\bin\\java.exe"
-java_home = java_home.replace("\\", "/")
+try:
+    java_home = os.getenv("JAVA_HOME")+r"\\bin\\java.exe"
+    java_home = java_home.replace("\\", "/")
+except:
+    pass
 global isJava
 isJava = True
 try: 
@@ -223,7 +226,7 @@ class ArgonInstaller(ct.CTk):
         self.author_label = ct.CTkLabel(self.page5, text="Made by v-pun215.", font=("Inter", 15), text_color="#b3b3b3")
         self.author_label.place(relx=0.89, rely=0.955, anchor="center")
 
-    def is_admin():
+    def is_admin(self):
         try:
             return ctypes.windll.shell32.IsUserAnAdmin()
         except:
@@ -246,7 +249,10 @@ class ArgonInstaller(ct.CTk):
 
         # Step 1: Download the MSI installer
         print("Downloading BellSoft JDK 21...")
-        wget.download(msi_url, msi_file)
+        try:
+            wget.download(msi_url, msi_file)
+        except Exception as e:
+            Exception("Failed to download the MSI installer. Please check your internet connection or the URL. Full error: " + str(e))
         print("\nDownload complete.")
 
         msi_file = "bellsoft-jdk21.msi"

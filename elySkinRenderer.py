@@ -1,105 +1,33 @@
-from selenium import webdriver
-from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.common.by import By
-from selenium.webdriver.chrome.options import Options
-import time
 import base64
-import os
-from PIL import Image
 import json
-def render_skin(skinPath):
-    with open("settings.json", "r") as js_read:
-        s = js_read.read()
-        s = s.replace('\t','')  #Trailing commas in dict cause file read problems, these lines will fix it.
-        s = s.replace('\n','')  #Found this on stackoverflow.
-        s = s.replace(',}','}')
-        s = s.replace(',]',']')
-        data = json.loads(s)
-        #print(json.dumps(data, indent=4,))
+import urllib.request
+import requests as re
+import wget
 
-    username = data["User-info"][0]["username"]
+key = "msk_vbErfWTw_ASPIcgIAAoN5y8c8et5COZZICh_xgPxKxcwP8oehV8HnOG5jRggWheEnLWlPVMk0"
+useragent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36"
+def get_skin_texture_hash(username, skinPath):
+    with open(skinPath, 'rb') as file:
+        response = re.post(
+            url='https://api.mineskin.org/generate/upload',
+            data={"name": username, "visibility": 0},
+            files={"file": (skinPath, file, 'text/x-spam')},
+            headers={"User-Agent": useragent,"Authorization": "Bearer " + key}
+        )
 
-    currn_dir = os.getcwd().replace("\\", "/")
-    options = Options()
-    options.add_argument("--headless")
-    driver = webdriver.Chrome(options=options)
-    driver.get("https://mchorse.github.io/mchead/")
-    time.sleep(2)
-    file_input = driver.find_element(By.CSS_SELECTOR, "input[type='file']")
-    file_input.send_keys(f"{currn_dir}/{skinPath}")
-    time.sleep(1)
-    y = driver.find_element(By.NAME, "y")
-    y.clear()
-    y.send_keys("43")
-    y.send_keys(Keys.RETURN)
-    x = driver.find_element(By.NAME, "x")
-    x.clear()
-    x.send_keys("20")
-    x.send_keys(Keys.RETURN)
-    time.sleep(1)
-    img = driver.find_element(By.ID, "output")
-    render = img.get_attribute("src")
-    driver.close()
-    decodedData = base64.b64decode((render.removeprefix("data:image/png;base64,")))
-  
-    # Write Image from Base64 File
-    imgFile = open(f'img/user/uncropped.png', 'wb')
-    imgFile.write(decodedData)
-    imgFile.close()
+        encoded_value =response.json()['data']['texture']['value']
+    
+    decoded_json = json.loads(base64.b64decode(encoded_value).decode("utf-8"))
+    skin_url = decoded_json["textures"]["SKIN"]["url"]
+    texture_hash = skin_url.split("/")[-1]
+    return texture_hash
 
-    # Crop the image
-    img = Image.open(f"img/user/uncropped.png")
-    width, height = img.size
+def render_head(username, skinPath):
+    texture_hash = get_skin_texture_hash(username, skinPath)
+    nickac_url = f"https://nmsr.nickac.dev/head/{texture_hash}"
+    wget.download(nickac_url, out=f"img/user/ely-{username}.png")
 
-    left = 30
-    top = 100
-    right = 220
-    bottom = 3 * height / 5
-
-    im1 = img.crop((left, top+25, right, bottom))
-    newsize = (144, 138)
-    im1 = im1.resize(newsize)
-    im1.save(f"img/user/ely-{username}.png")
-    os.remove("img/user/uncropped.png")
-
-def render_iso_skin(skinPath):
-    with open("settings.json", "r") as js_read:
-        s = js_read.read()
-        s = s.replace('\t','')  #Trailing commas in dict cause file read problems, these lines will fix it.
-        s = s.replace('\n','')  #Found this on stackoverflow.
-        s = s.replace(',}','}')
-        s = s.replace(',]',']')
-        data = json.loads(s)
-        #print(json.dumps(data, indent=4,))
-
-    username = data["User-info"][0]["username"]
-
-    currn_dir = os.getcwd().replace("\\", "/")
-    options = Options()
-    options.add_argument("--headless")
-    driver = webdriver.Chrome(options=options)
-    driver.get("https://mchorse.github.io/mchead/")
-    time.sleep(2)
-    file_input = driver.find_element(By.CSS_SELECTOR, "input[type='file']")
-    file_input.send_keys(f"{currn_dir}/{skinPath}")
-    body_checkbox = driver.find_element(By.NAME, "head")
-    body_checkbox.click()
-    time.sleep(1)
-    y = driver.find_element(By.NAME, "y")
-    y.clear()
-    y.send_keys("43")
-    y.send_keys(Keys.RETURN)
-    x = driver.find_element(By.NAME, "x")
-    x.clear()
-    x.send_keys("20")
-    x.send_keys(Keys.RETURN)
-    time.sleep(1)
-    img = driver.find_element(By.ID, "output")
-    render = img.get_attribute("src")
-    driver.close()
-    decodedData = base64.b64decode((render.removeprefix("data:image/png;base64,")))
-  
-    # Write Image from Base64 File
-    imgFile = open(f'img/user/ely-{username}-skin.png', 'wb')
-    imgFile.write(decodedData)
-    imgFile.close()
+def render_body(username, skinPath):
+    texture_hash = get_skin_texture_hash(username, skinPath)
+    nickac_url = f"https://nmsr.nickac.dev/fullbody/{texture_hash}"
+    wget.download(nickac_url, out=f"img/user/ely-{username}-skin.png")

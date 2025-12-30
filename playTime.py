@@ -249,4 +249,3 @@ def getFavInstIcon():
                 return instance_data_list[0]["icon"]
             
     return "release"
-getFavInstIcon()

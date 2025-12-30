@@ -1,1 +1,16 @@
+eclient_main.py
+launcherProfiles.json
+mcNewsletter.json
+mcNewsletter.xml
+metadata.json
+settings.json
+test.py
+test2.py
+testie.py
+/macos
+/instances
+/__pycache__
+CTkScrollableDropdown/__pycache__
 .DS_Store
+authlib/
+img/user/
