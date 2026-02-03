@@ -55,6 +55,7 @@ As of v1.4, the macOS installer is in beta, and requires a Python installation (
  - ☘️ Log in methods: Microsoft, ElyBy, and Offline (cracked) 
 
 # Credits
+ - Heavily inspired by [SKLauncher](https://skmedix.pl/)
  - [customtkinter](https://github.com/tomschimansky/customtkinter)
  - [minecraft-launcher-lib](https://codeberg.org/JakobDev/minecraft-launcher-lib)
  - [pypresence](https://github.com/qwertyquerty/pypresence)
