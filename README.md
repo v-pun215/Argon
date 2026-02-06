@@ -4,7 +4,7 @@
 
 A feature-rich, mod-supporting, Minecraft Launcher built in Python.
 
-![hackatime badge](https://hackatime-badge.hackclub.com/U081T49KRUP/Argon) [![License: CC BY-NC-ND 4.0](https://img.shields.io/badge/License-CC_BY--NC--ND_4.0-lightgrey.svg)](https://creativecommons.org/licenses/by-nc-nd/4.0/) 
+![hackatime badge](https://hackatime-badge.hackclub.com/U081T49KRUP/Argon) [![License: CC BY-NC-ND 4.0](https://img.shields.io/badge/License-CC_BY--NC--ND_4.0-lightgrey.svg)](https://creativecommons.org/licenses/by-nc-nd/4.0/) [![justforfunnoreally.dev badge](https://img.shields.io/badge/justforfunnoreally-dev-9ff)](https://justforfunnoreally.dev)
 
 ![image](https://github.com/user-attachments/assets/0b6a811e-ae9b-4e07-9d70-6ad376eeb180)
 
