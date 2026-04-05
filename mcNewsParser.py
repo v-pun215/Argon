@@ -12,9 +12,12 @@ def get_news_list():
     for entry in root.findall('atom:entry', namespace):
         title = entry.find('atom:title', namespace).text
         content = entry.find('atom:content', namespace).text
-        link = entry.find("atom:link[@rel='alternate']", namespace).get('href')
-        image = entry.find("atom:link[@rel='enclosure']", namespace).get('href')
-        
+        link_el = entry.find("atom:link[@rel='alternate']", namespace)
+        link = link_el.get('href') if link_el is not None else ''
+
+        image_el = entry.find("atom:link[@rel='enclosure']", namespace)
+        image = image_el.get('href') if image_el is not None else None
+
         entries.append({
             'title': title,
             'content': content,

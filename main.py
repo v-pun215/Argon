@@ -1,5 +1,5 @@
 # Argon, v-pun215
-import os
+import os, re as _re
 import platform
 os_name = platform.system()
 from tkinter import PhotoImage
@@ -840,7 +840,6 @@ class Argon(ct.CTk):
                 setup_grid_with_frame_padding_and_gaps(num_cards)
 
             for i, new in enumerate(news):
-                # compute grid row for this card: row = 1 + i*2
                 row_index = 1 + i * 2
 
                 title = short(new["title"], 40)
@@ -856,18 +855,23 @@ class Argon(ct.CTk):
                     fg_color="#262626",
                     bg_color="transparent"
                 )
-                # place frame in content column (1). Left/right padding are handled by columns 0 and 2.
-                # anchor to top of its row so spacers appear BETWEEN cards (not above/below a card)
                 frame.grid(row=row_index, column=1, sticky="n", padx=0, pady=0)
 
-                # load image (synchronous as before)
-                resp = requests.get(imageURL, headers=mcNewsHeaders, stream=True, timeout=10)
-                img = Image.open(io.BytesIO(resp.content))
+                # --- image (optional) ---
+                ctk_img = None
+                if imageURL:
+                    try:
+                        resp = requests.get(imageURL, headers=mcNewsHeaders, stream=True, timeout=10)
+                        resp.raise_for_status()
+                        img = Image.open(io.BytesIO(resp.content))
+                        ctk_img = ct.CTkImage(light_image=img, dark_image=img, size=(80, 80))
+                        img_label = ct.CTkLabel(frame, text="", image=ctk_img, bg_color="transparent", corner_radius=5)
+                        img_label.place(x=5, y=10)
+                    except Exception as img_err:
+                        print(f"Image load failed for '{title}':", img_err)
 
-                ctk_img = ct.CTkImage(light_image=img, dark_image=img, size=(80, 80))
-
-                img_label = ct.CTkLabel(frame, text="", image=ctk_img, bg_color="transparent", corner_radius=5)
-                img_label.place(x=5, y=10)
+                # offset text right only if image loaded successfully
+                text_x = 110 if ctk_img else 15
 
                 title_label = ct.CTkLabel(
                     frame,
@@ -876,7 +880,7 @@ class Argon(ct.CTk):
                     text_color="white",
                     bg_color="transparent"
                 )
-                title_label.place(x=110, y=10)
+                title_label.place(x=text_x, y=10)
 
                 desc_label = ct.CTkLabel(
                     frame,
@@ -885,7 +889,7 @@ class Argon(ct.CTk):
                     text_color="#b3b3b3",
                     bg_color="transparent"
                 )
-                desc_label.place(x=110, y=60)
+                desc_label.place(x=text_x, y=60)
 
                 readmore_btn = ct.CTkButton(
                     frame,
@@ -902,7 +906,6 @@ class Argon(ct.CTk):
                 )
                 readmore_btn.place(x=680, y=60)
 
-                # keep references so CTkImage doesn't get GC'd
                 self.news_widgets.append((frame, ctk_img))
 
         except Exception as e:
@@ -3032,8 +3035,8 @@ class Argon(ct.CTk):
         '''Runs minecraft with the specified settings'''
         with open("settings.json", "r") as js_read:
             s = js_read.read()
-            s = s.replace('\t','')  #Trailing commas in dict cause file read problems, these lines will fix it.
-            s = s.replace('\n','')  #Found this on stackoverflow.
+            s = s.replace('\t','')
+            s = s.replace('\n','')
             s = s.replace(',}','}')
             s = s.replace(',]',']')
             data = json.loads(s)
@@ -3049,27 +3052,43 @@ class Argon(ct.CTk):
 
         with open("settings.json", "r") as js_read1:
             self.s1 = js_read1.read()
-            self.s1 = self.s1.replace('\t','')  #Trailing commas in dict cause file read problems, these lines will fix it.
-            self.s1 = self.s1.replace('\n','')  #Found this on stackoverflow.
+            self.s1 = self.s1.replace('\t','')
+            self.s1 = self.s1.replace('\n','')
             self.s1 = self.s1.replace(',}','}')
             self.s1 = self.s1.replace(',]',']')
             self.data1 = json.loads(self.s1)
 
         self.mc_dir = data["Minecraft-home"]
-
         self.allocated_ram = self.data1["settings"][0]["allocated_ram"]
-
         self.modified_ram = self.allocated_ram//1
         self.ram_mb = int(self.modified_ram)
-
         self.ram_gb = self.allocated_ram//1000
         self.int_ram_gb = int(self.ram_gb)
-
         self.cpu_count = os.cpu_count()
+
         if ramlimiterExceptionBypassedSelected == True:
             print("RAM Limiter is turned off. This is not recommended. Use only for testing purposes.")
             print(r"Allocating 99% of free RAM to Minecraft.")
             self.ram_mb = int(psutil.virtual_memory().free / 1024 / 1024) - 1000
+
+        def get_java_major_version(java_path="java"):
+            try:
+                result = subprocess.run([java_path, "-version"], capture_output=True, text=True)
+                match = regex.search(r'"(\d+)', result.stderr or result.stdout)
+                if match:
+                    return int(match.group(1))
+            except Exception:
+                pass
+            return 0
+
+        def strip_unsupported_jvm_flags(command, java_path="java"):
+            _java_ver = get_java_major_version(java_path if java_path else "java")
+            if _java_ver < 23:
+                command = [arg for arg in command if arg != "--sun-misc-unsafe-memory-access=allow"]
+            return command
+
+        _UNTRACKED = {"Latest Release", "Latest Snapshot"}
+
         self.j1 = [f"-Xmx{int(self.ram_mb)}M", "-Xms128M"]
 
         data["settings"][0]["jvm-args"] = self.j1
@@ -3077,26 +3096,7 @@ class Argon(ct.CTk):
         with open("settings.json", "w") as js_set:
             json.dump(data, js_set, indent=4)
             js_set.close()
-        """ Next update
-        method1, type1, version1 = self.runtime_ver.split(" ")
-        print(version1)
-        for version in mc.utils.get_installed_versions(mc_dir):
-            if method1 == "vanilla":
-                if not version1 == version["id"]:
-                    print("Not installed")
-                    not_installed = True
-                else:
-                    
-            elif method1 == "fabric":
-                self.lv = get_latest_loader_version()
-                version1 =f"fabric-loader-{self.lv}-{version1}"
-                if not version1 == version["id"]:
-                    print("Not installed")
-                    self.handle_download(self.runtime_ver)
-                    return
-            elif method1 == "forge":
-                pass
-        """
+
         with open("settings.json", "r") as js_read:
             s = js_read.read()
             s = s.replace('\t','')
@@ -3104,6 +3104,14 @@ class Argon(ct.CTk):
             s = s.replace(',}','}')
             s = s.replace(',]',']')
             data = json.loads(s)
+
+        # Pre-fetch fabric loader version if needed
+        self.lv = None
+        if self.runtime_ver.startswith("fabric"):
+            try:
+                self.lv = get_latest_loader_version()
+            except Exception as e:
+                print(f"Failed to get Fabric loader version: {e}")
 
         os.chdir(mc_dir)
         if self.login_method == "Microsoft":
@@ -3117,7 +3125,6 @@ class Argon(ct.CTk):
             selected_instance = str(data["selected-instance"])
             if self.runtime_ver.startswith("vanilla"):
                 try:
-                    # Get the selected version
                     if data["selected-version"].startswith("vanilla snapshot"):
                         self.mc_ver = str(data["selected-version"]).removeprefix("vanilla ")
                     else:
@@ -3128,16 +3135,16 @@ class Argon(ct.CTk):
                     else:
                         self.detected_ver = str(data["selected-version"]).removeprefix("vanilla snapshot ")
 
-
                     self.withdraw()
                     self.minecraft_command = mc.command.get_minecraft_command(self.detected_ver, self.mc_dir, self.options)
+                    self.minecraft_command = strip_unsupported_jvm_flags(self.minecraft_command, javaPath)
                     start_time = time.time()
                     print(f"Launching Minecraft {self.mc_ver}")
                     command = subprocess.Popen(
                         self.minecraft_command,
                         stdout=subprocess.PIPE,
-                        stderr=subprocess.STDOUT,  # Combine stderr with stdout
-                        text=True  # Decode output as text
+                        stderr=subprocess.STDOUT,
+                        text=True
                     )
                     try:
                         last_line = None
@@ -3146,17 +3153,17 @@ class Argon(ct.CTk):
                             print(line, end='')
                             log += line + "\n"
                             last_line = line
-
                         minecraft_log = log
                         command.wait()
-
                     except Exception as e:
                         print("error", e)
                     elapsed_time = time.time() - start_time
                     elapsed_time = int(str(elapsed_time).split(".")[0])
                     print("Minecraft ran for", time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))
-                    playTime.addTime(selected_instance, time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))
-                    '''Get crash report if it exists '''
+                    if selected_instance not in _UNTRACKED:
+                        playTime.addTime(selected_instance, time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))
+                    else:
+                        print(f"Skipping playtime tracking for '{selected_instance}'")
                     if last_line.startswith("#@!@# Game crashed!"):
                         print("Game crashed! Getting crash report...")
                         match = regex.search(r"[A-Za-z]:\\[^\n]+", last_line)
@@ -3177,7 +3184,6 @@ class Argon(ct.CTk):
                     else:
                         msg.CTkMessagebox(title="Error", message=f"Version {self.runtime_ver} not downloaded.", icon="cancel")
             elif self.runtime_ver.startswith("fabric"):
-                self.lv = get_latest_loader_version()
                 print(data["selected-instance"])
                 try:
                     self.mc_ver = str(data["selected-version"]).partition(" ")[2]
@@ -3186,14 +3192,13 @@ class Argon(ct.CTk):
                         self.detected_ver = self.mc_ver.strip("release ")
                     elif self.mc_ver.startswith("snapshot"):
                         self.detected_ver = self.mc_ver.partition(' ')[2]
-                    self.v1 = self.detected_ver 
+                    self.v1 = self.detected_ver
                     self.detected_ver = f"fabric-loader-{self.lv}-{self.v1}"
-                    
 
                     if os_name == "Windows":
                         selected_instanceDIR = currn_dir + "\\instances\\" + selected_instance + "\\mods"
                     else:
-                        selected_instanceDIR = currn_dir + "/instances/" + selected_instance + "/mods" 
+                        selected_instanceDIR = currn_dir + "/instances/" + selected_instance + "/mods"
                     instanceHasMods = False
                     if mods.Manager.doesInstanceHaveMods(selected_instanceDIR):
                         instanceHasMods = True
@@ -3202,14 +3207,15 @@ class Argon(ct.CTk):
                         pass
                     self.withdraw()
                     self.minecraft_command = mc.command.get_minecraft_command(self.detected_ver, self.mc_dir, self.options)
+                    self.minecraft_command = strip_unsupported_jvm_flags(self.minecraft_command, javaPath)
                     print(self.detected_ver)
                     print(f"Launching Minecraft {self.mc_ver}")
                     start_time = time.time()
                     command = subprocess.Popen(
                         self.minecraft_command,
                         stdout=subprocess.PIPE,
-                        stderr=subprocess.STDOUT,  # Combine stderr with stdout
-                        text=True  # Decode output as text
+                        stderr=subprocess.STDOUT,
+                        text=True
                     )
                     try:
                         last_line = None
@@ -3218,7 +3224,6 @@ class Argon(ct.CTk):
                             print(line, end='')
                             log += line + "\n"
                             last_line = line
-
                         minecraft_log = log
                         command.wait()
                     except:
@@ -3227,12 +3232,14 @@ class Argon(ct.CTk):
                     elapsed_time = int(str(elapsed_time).split(".")[0])
                     print("Minecraft ran for", time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))
                     print(data["selected-instance"])
-                    playTime.addTime(data["selected-instance"], time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))
+                    if selected_instance not in _UNTRACKED:
+                        playTime.addTime(selected_instance, time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))
+                    else:
+                        print(f"Skipping playtime tracking for '{selected_instance}'")
                     if instanceHasMods:
                         mods.Manager.transferFilesBack(selected_instanceDIR, self.mc_dir)
                     else:
                         pass
-                    '''Get crash report if it exists '''
                     if last_line.startswith("#@!@# Game crashed!"):
                         print("Game crashed! Getting crash report...")
                         match = regex.search(r"[A-Za-z]:\\[^\n]+", last_line)
@@ -3253,14 +3260,11 @@ class Argon(ct.CTk):
                         msg.CTkMessagebox(title="Error", message=f"Version {self.runtime_ver} not downloaded.", icon="cancel")
             elif self.runtime_ver.startswith("forge"):
                 try:
-                    #get version name
                     self.mc_ver = data["selected-version"].strip("forge release ")
                     parts = self.mc_ver.split('-')
-                    
                     self.detected_ver1 = f"{parts[0]}-forge-{parts[1]}"
                     if len(parts) < 2:
-                        self.detected_ver = self.mc_ver
-                    
+                        self.detected_ver1 = self.mc_ver
 
                     selected_instance = data["selected-instance"]
                     if os_name == "Windows":
@@ -3268,22 +3272,22 @@ class Argon(ct.CTk):
                     else:
                         selected_instanceDIR = currn_dir + "/instances/" + selected_instance + "/mods"
                     instanceHasMods = False
-                    # fix this
                     if mods.Manager.doesInstanceHaveMods(selected_instanceDIR):
                         instanceHasMods = True
                         mods.Manager.transferModsOnRun(selected_instanceDIR, self.mc_dir)
                     else:
                         pass
                     self.withdraw()
-                    self.minecraft_command = mc.command.get_minecraft_command(self.detected_ver, self.mc_dir, self.options)
-                    print(self.detected_ver)
+                    self.minecraft_command = mc.command.get_minecraft_command(self.detected_ver1, self.mc_dir, self.options)
+                    self.minecraft_command = strip_unsupported_jvm_flags(self.minecraft_command, javaPath)
+                    print(self.detected_ver1)
                     print(f"Launching Minecraft {self.mc_ver}")
                     start_time = time.time()
                     command = subprocess.Popen(
                         self.minecraft_command,
                         stdout=subprocess.PIPE,
-                        stderr=subprocess.STDOUT,  # Combine stderr with stdout
-                        text=True  # Decode output as text
+                        stderr=subprocess.STDOUT,
+                        text=True
                     )
                     try:
                         last_line = None
@@ -3292,7 +3296,6 @@ class Argon(ct.CTk):
                             print(line, end='')
                             log += line + "\n"
                             last_line = line
-
                         minecraft_log = log
                         command.wait()
                     except:
@@ -3300,12 +3303,14 @@ class Argon(ct.CTk):
                     elapsed_time = time.time() - start_time
                     elapsed_time = int(str(elapsed_time).split(".")[0])
                     print("Minecraft ran for", time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))
-                    playTime.addTime(selected_instance, time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))
+                    if selected_instance not in _UNTRACKED:
+                        playTime.addTime(selected_instance, time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))
+                    else:
+                        print(f"Skipping playtime tracking for '{selected_instance}'")
                     if instanceHasMods:
                         mods.Manager.transferFilesBack(selected_instanceDIR, self.mc_dir)
                     else:
                         pass
-                    '''Get crash report if it exists '''
                     if last_line.startswith("#@!@# Game crashed!"):
                         print("Game crashed! Getting crash report...")
                         match = regex.search(r"[A-Za-z]:\\[^\n]+", last_line)
@@ -3324,7 +3329,7 @@ class Argon(ct.CTk):
                         self.handle_download(self.runtime_ver)
                     else:
                         msg.CTkMessagebox(title="Error", message=f"Version {self.runtime_ver} not downloaded.", icon="cancel")
-        
+
         elif self.login_method == "ElyBy":
             if not os_name.lower=="windows":
                 self.j2 = [r"-javaagent:{}/authlib/".format(currn_dir) + "" + f"authlib-injector-1.2.7.jar=ely.by", f"-Xmx{int(self.ram_mb)}M", "-Xms128M"]
@@ -3349,13 +3354,14 @@ class Argon(ct.CTk):
 
                     self.withdraw()
                     self.minecraft_command = mc.command.get_minecraft_command(self.detected_ver, self.mc_dir, self.options)
+                    self.minecraft_command = strip_unsupported_jvm_flags(self.minecraft_command, javaPath)
                     print(f"Launching Minecraft {self.mc_ver}")
                     start_time = time.time()
                     command = subprocess.Popen(
                         self.minecraft_command,
                         stdout=subprocess.PIPE,
-                        stderr=subprocess.STDOUT,  # Combine stderr with stdout
-                        text=True  # Decode output as text
+                        stderr=subprocess.STDOUT,
+                        text=True
                     )
                     try:
                         last_line = None
@@ -3364,7 +3370,6 @@ class Argon(ct.CTk):
                             print(line, end='')
                             log += line + "\n"
                             last_line = line
-
                         minecraft_log = log
                         command.wait()
                     except:
@@ -3372,8 +3377,10 @@ class Argon(ct.CTk):
                     elapsed_time = time.time() - start_time
                     elapsed_time = int(str(elapsed_time).split(".")[0])
                     print("Minecraft ran for", time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))
-                    playTime.addTime(selected_instance, time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))
-                    #Get crash report if it exists
+                    if selected_instance not in _UNTRACKED:
+                        playTime.addTime(selected_instance, time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))
+                    else:
+                        print(f"Skipping playtime tracking for '{selected_instance}'")
                     if last_line.startswith("#@!@# Game crashed!"):
                         print("Game crashed! Getting crash report...")
                         match = regex.search(r"[A-Za-z]:\\[^\n]+", last_line)
@@ -3404,7 +3411,6 @@ class Argon(ct.CTk):
 
                     self.v1 = self.detected_ver
                     self.detected_ver2 = f"fabric-loader-{self.lv}-{self.v1}"
-                    
 
                     if os_name == "Windows":
                         selected_instanceDIR = currn_dir + "\\instances\\" + selected_instance + "\\mods"
@@ -3418,14 +3424,15 @@ class Argon(ct.CTk):
                         pass
                     self.withdraw()
                     self.minecraft_command = mc.command.get_minecraft_command(self.detected_ver2, self.mc_dir, self.options)
+                    self.minecraft_command = strip_unsupported_jvm_flags(self.minecraft_command, javaPath)
                     print(self.detected_ver)
                     print(f"Launching Minecraft {self.mc_ver}")
                     start_time = time.time()
                     command = subprocess.Popen(
                         self.minecraft_command,
                         stdout=subprocess.PIPE,
-                        stderr=subprocess.STDOUT,  # Combine stderr with stdout
-                        text=True  # Decode output as text
+                        stderr=subprocess.STDOUT,
+                        text=True
                     )
                     try:
                         last_line = None
@@ -3434,7 +3441,6 @@ class Argon(ct.CTk):
                             print(line, end='')
                             log += line + "\n"
                             last_line = line
-
                         minecraft_log = log
                         command.wait()
                     except:
@@ -3442,12 +3448,14 @@ class Argon(ct.CTk):
                     elapsed_time = time.time() - start_time
                     elapsed_time = int(str(elapsed_time).split(".")[0])
                     print("Minecraft ran for", time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))
-                    playTime.addTime(selected_instance, time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))
+                    if selected_instance not in _UNTRACKED:
+                        playTime.addTime(selected_instance, time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))
+                    else:
+                        print(f"Skipping playtime tracking for '{selected_instance}'")
                     if instanceHasMods:
                         mods.Manager.transferFilesBack(selected_instanceDIR, self.mc_dir)
                     else:
                         pass
-                    #Get crash report if it exists
                     if last_line.startswith("#@!@# Game crashed!"):
                         print("Game crashed! Getting crash report...")
                         match = regex.search(r"[A-Za-z]:\\[^\n]+", last_line)
@@ -3466,10 +3474,9 @@ class Argon(ct.CTk):
                         self.handle_download(self.runtime_ver)
                     else:
                         msg.CTkMessagebox(title="Error", message=f"Version {self.runtime_ver} not downloaded.", icon="cancel")
-            
+
             elif self.runtime_ver.startswith("forge"):
                 try:
-
                     self.mc_ver = data["selected-version"].strip("forge release ")
                     parts = self.mc_ver.split('-')
                     self.detected_ver1 = f"{parts[0]}-forge-{parts[1]}"
@@ -3485,14 +3492,15 @@ class Argon(ct.CTk):
                         pass
                     self.withdraw()
                     self.minecraft_command = mc.command.get_minecraft_command(self.detected_ver1, self.mc_dir, self.options)
-                    print(self.detected_ver)
+                    self.minecraft_command = strip_unsupported_jvm_flags(self.minecraft_command, javaPath)
+                    print(self.detected_ver1)
                     print(f"Launching Minecraft {self.mc_ver}")
                     start_time = time.time()
                     command = subprocess.Popen(
                         self.minecraft_command,
                         stdout=subprocess.PIPE,
-                        stderr=subprocess.STDOUT,  # Combine stderr with stdout
-                        text=True  # Decode output as text
+                        stderr=subprocess.STDOUT,
+                        text=True
                     )
                     try:
                         last_line = None
@@ -3501,7 +3509,6 @@ class Argon(ct.CTk):
                             print(line, end='')
                             log += line + "\n"
                             last_line = line
-
                         minecraft_log = log
                         command.wait()
                     except:
@@ -3509,12 +3516,14 @@ class Argon(ct.CTk):
                     elapsed_time = time.time() - start_time
                     elapsed_time = int(str(elapsed_time).split(".")[0])
                     print("Minecraft ran for", time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))
-                    playTime.addTime(selected_instance, time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))
+                    if selected_instance not in _UNTRACKED:
+                        playTime.addTime(selected_instance, time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))
+                    else:
+                        print(f"Skipping playtime tracking for '{selected_instance}'")
                     if instanceHasMods:
                         mods.Manager.transferFilesBack(selected_instanceDIR, self.mc_dir)
                     else:
                         pass
-                    #Get crash report if it exists 
                     if last_line.startswith("#@!@# Game crashed!"):
                         print("Game crashed! Getting crash report...")
                         match = regex.search(r"[A-Za-z]:\\[^\n]+", last_line)
@@ -3557,15 +3566,15 @@ class Argon(ct.CTk):
                         self.detected_ver = self.mc_ver.partition(' ')[2]
                     self.withdraw()
                     self.minecraft_command = mc.command.get_minecraft_command(self.detected_ver, self.mc_dir, self.options)
+                    self.minecraft_command = strip_unsupported_jvm_flags(self.minecraft_command, javaPath)
                     print(self.detected_ver)
-
                     print(f"Launching Minecraft {self.mc_ver}")
                     start_time = time.time()
                     command = subprocess.Popen(
                         self.minecraft_command,
                         stdout=subprocess.PIPE,
-                        stderr=subprocess.STDOUT,  # Combine stderr with stdout
-                        text=True  # Decode output as text
+                        stderr=subprocess.STDOUT,
+                        text=True
                     )
                     try:
                         last_line = None
@@ -3574,7 +3583,6 @@ class Argon(ct.CTk):
                             print(line, end='')
                             log += line + "\n"
                             last_line = line
-
                         minecraft_log = log
                         command.wait()
                     except:
@@ -3582,8 +3590,10 @@ class Argon(ct.CTk):
                     elapsed_time = time.time() - start_time
                     elapsed_time = int(str(elapsed_time).split(".")[0])
                     print("Minecraft ran for", time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))
-                    playTime.addTime(selected_instance, time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))
-                    #Get crash report if it exists
+                    if selected_instance not in _UNTRACKED:
+                        playTime.addTime(selected_instance, time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))
+                    else:
+                        print(f"Skipping playtime tracking for '{selected_instance}'")
                     if last_line.startswith("#@!@# Game crashed!"):
                         print("Game crashed! Getting crash report...")
                         match = regex.search(r"[A-Za-z]:\\[^\n]+", last_line)
@@ -3605,7 +3615,7 @@ class Argon(ct.CTk):
             elif self.runtime_ver.startswith("fabric"):
                 try:
                     if data["selected-version"] == "vanilla snapshot":
-                            self.mc_ver = str(data["selected-version"]).partition(" ")[2]
+                        self.mc_ver = str(data["selected-version"]).partition(" ")[2]
                     else:
                         self.mc_ver = str(data["selected-version"]).strip("vanilla ")
                     self.detected_ver = ""
@@ -3613,7 +3623,7 @@ class Argon(ct.CTk):
                         self.detected_ver = self.mc_ver.strip("release ")
                     elif self.mc_ver.startswith("snapshot"):
                         self.detected_ver = self.mc_ver.partition(' ')[2]
- 
+
                     self.mc_ver = str(data["selected-version"]).partition(" ")[2]
                     self.detected_ver = ""
                     if self.mc_ver.startswith("release"):
@@ -3635,14 +3645,15 @@ class Argon(ct.CTk):
                         pass
                     self.withdraw()
                     self.minecraft_command = mc.command.get_minecraft_command(self.detected_ver2, self.mc_dir, self.options)
+                    self.minecraft_command = strip_unsupported_jvm_flags(self.minecraft_command, javaPath)
                     print(self.detected_ver)
                     print(f"Launching Minecraft {self.mc_ver}")
                     start_time = time.time()
                     command = subprocess.Popen(
                         self.minecraft_command,
                         stdout=subprocess.PIPE,
-                        stderr=subprocess.STDOUT,  # Combine stderr with stdout
-                        text=True  # Decode output as text
+                        stderr=subprocess.STDOUT,
+                        text=True
                     )
                     try:
                         last_line = None
@@ -3651,7 +3662,6 @@ class Argon(ct.CTk):
                             print(line, end='')
                             log += line + "\n"
                             last_line = line
-
                         minecraft_log = log
                         command.wait()
                     except:
@@ -3659,12 +3669,14 @@ class Argon(ct.CTk):
                     elapsed_time = time.time() - start_time
                     elapsed_time = int(str(elapsed_time).split(".")[0])
                     print("Minecraft ran for", time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))
-                    playTime.addTime(selected_instance, time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))
+                    if selected_instance not in _UNTRACKED:
+                        playTime.addTime(selected_instance, time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))
+                    else:
+                        print(f"Skipping playtime tracking for '{selected_instance}'")
                     if instanceHasMods:
                         mods.Manager.transferFilesBack(selected_instanceDIR, self.mc_dir)
                     else:
                         pass
-                    #Get crash report if it exists
                     if last_line.startswith("#@!@# Game crashed!"):
                         print("Game crashed! Getting crash report...")
                         match = regex.search(r"[A-Za-z]:\\[^\n]+", last_line)
@@ -3687,7 +3699,7 @@ class Argon(ct.CTk):
             elif self.runtime_ver.startswith("forge"):
                 try:
                     if data["selected-version"] == "vanilla snapshot":
-                            self.mc_ver = str(data["selected-version"]).partition(" ")[2]
+                        self.mc_ver = str(data["selected-version"]).partition(" ")[2]
                     else:
                         self.mc_ver = str(data["selected-version"]).strip("vanilla ")
                     self.detected_ver = ""
@@ -3711,14 +3723,15 @@ class Argon(ct.CTk):
                         pass
                     self.withdraw()
                     self.minecraft_command = mc.command.get_minecraft_command(self.detected_ver1, self.mc_dir, self.options)
-                    print(self.detected_ver)
+                    self.minecraft_command = strip_unsupported_jvm_flags(self.minecraft_command, javaPath)
+                    print(self.detected_ver1)
                     print(f"Launching Minecraft {self.mc_ver}")
                     start_time = time.time()
                     command = subprocess.Popen(
                         self.minecraft_command,
                         stdout=subprocess.PIPE,
-                        stderr=subprocess.STDOUT,  # Combine stderr with stdout
-                        text=True  # Decode output as text
+                        stderr=subprocess.STDOUT,
+                        text=True
                     )
                     try:
                         last_line = None
@@ -3727,7 +3740,6 @@ class Argon(ct.CTk):
                             print(line, end='')
                             log += line + "\n"
                             last_line = line
-
                         minecraft_log = log
                         command.wait()
                     except:
@@ -3735,12 +3747,14 @@ class Argon(ct.CTk):
                     elapsed_time = time.time() - start_time
                     elapsed_time = int(str(elapsed_time).split(".")[0])
                     print("Minecraft ran for", time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))
-                    playTime.addTime(selected_instance, time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))
+                    if selected_instance not in _UNTRACKED:
+                        playTime.addTime(selected_instance, time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))
+                    else:
+                        print(f"Skipping playtime tracking for '{selected_instance}'")
                     if instanceHasMods:
                         mods.Manager.transferFilesBack(selected_instanceDIR, self.mc_dir)
                     else:
                         pass
-                    #Get crash report if it exists
                     if last_line.startswith("#@!@# Game crashed!"):
                         print("Game crashed! Getting crash report...")
                         match = regex.search(r"[A-Za-z]:\\[^\n]+", last_line)
@@ -3759,7 +3773,6 @@ class Argon(ct.CTk):
                         self.handle_download(self.runtime_ver)
                     else:
                         msg.CTkMessagebox(title="Error", message=f"Version {self.runtime_ver} not downloaded.", icon="cancel")
-
 
         '''
         if self.runtime_ver.startswith("vanilla"):
